@@ -9,7 +9,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension UTType {
-    static var markdownText: UTType {
+    nonisolated static var markdownText: UTType {
         UTType(importedAs: "net.daringfireball.markdown")
     }
 }
