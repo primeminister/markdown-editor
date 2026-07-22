@@ -11,8 +11,8 @@ import SwiftUI
 /// `NavigationSplitView` has no built-in mechanism for that, and these workspace windows are plain
 /// `NSWindow`s outside SwiftUI's own Scene-based state restoration.
 final class WorkspaceSplitViewController: NSSplitViewController {
-    init(model: WorkspaceModel) {
-        let sidebarHostingController = NSHostingController(rootView: WorkspaceSidebarView(model: model))
+    init(model: WorkspaceModel, tabGroup: WorkspaceTabGroup) {
+        let sidebarHostingController = NSHostingController(rootView: WorkspaceSidebarView(model: model, tabGroup: tabGroup))
         // Without this, NSHostingController derives the window's size (and resize limits) from the
         // hosted SwiftUI content's ideal/max size -- for the sidebar that's the List's intrinsic
         // size based on row count, capping the whole window to a size tied to the number of files.
@@ -21,7 +21,7 @@ final class WorkspaceSplitViewController: NSSplitViewController {
         sidebarItem.minimumThickness = 180
         sidebarItem.canCollapse = false
 
-        let detailHostingController = NSHostingController(rootView: WorkspaceDetailView(model: model))
+        let detailHostingController = NSHostingController(rootView: WorkspaceDetailView(model: model, tabGroup: tabGroup))
         detailHostingController.sizingOptions = []
         let detailItem = NSSplitViewItem(viewController: detailHostingController)
         detailItem.minimumThickness = 400
