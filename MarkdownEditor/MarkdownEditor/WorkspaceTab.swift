@@ -34,8 +34,7 @@ final class WorkspaceTab {
         } catch {
             // Read failed (permissions, race with external delete) -- leave the previously shown file untouched.
             let alert = NSAlert(error: error)
-            alert.messageText = "Couldn't Open \"\(url.lastPathComponent)\""
-            alert.runModal()
+            alert.messageText = "Couldn't open \"\(url.lastPathComponent)\""
         }
     }
 }
