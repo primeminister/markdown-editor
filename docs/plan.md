@@ -81,16 +81,17 @@ Two layers, kept deliberately separate:
    - Double-click an active sidebar file opens it in a new native macOS window tab (`NSWindow.addTabbedWindow`) within the same folder's tab group; every tab in the group shows the same sidebar.
    - Track one "preview" tab per tab group: single-click always reuses/replaces that tab's content (bringing it to front); double-click, or editing the preview tab's content, promotes it to a permanent tab, and the next single-click gets a fresh preview tab.
    - Verify: single-click browsing never spawns tabs; double-click or typing pins the file as a permanent tab; pinned tabs survive further single-click browsing elsewhere in the sidebar.
+7. [ ] **M7 — Custom in-window tabs + persistent full-height sidebar.** Full design in `docs/plan-m7.md`.
+   - Replace M6's native window-tabs with a custom in-app tab strip: one real window per folder, sidebar spans the full window height (untouched by tab switching), tabs appear only above the editor/preview pane, sized to the filename.
+   - Same preview/permanent-tab promotion behavior as M6, re-scoped from "tab = window" to "tab = a slot in one window's tab strip." Tabs get a close button only (drag-reorder, keyboard shortcuts, context menu deferred).
+   - Sidebar gets a show/hide toggle (icon top-right of the sidebar); collapsing shrinks it to a narrow rail that still shows the icon, rather than hiding it entirely.
+   - Verify: one window per folder with no OS-level tab bar; single-click/double-click/edit-promotion behavior matches M6; closing the last tab leaves the window/sidebar open in the empty state; sidebar toggle animates between full width and icon-only rail and persists across relaunch.
 
 Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor -configuration Debug build` and `... test ...` (see Testing strategy). The "Verify:" bullets above require actually running the app on the owner's Mac.
 
 
 ## Next features to implement:
-1. create custom tab and sidebar:
-	- make sidebar window height
-	- tab width is size of filename
-	- tabs only are visile above editor/preview window.
-2. App preferences:
+1. App preferences:
 	- keyboard shortcut to turn on/off preview
 	- Other suggestions?
 2. When clicking help we have an extra menu that displays the contents of https://www.markdownguide.org/cheat-sheet/ for Markdown cheatsheet

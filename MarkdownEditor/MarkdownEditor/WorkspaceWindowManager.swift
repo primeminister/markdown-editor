@@ -9,7 +9,7 @@ import SwiftUI
 @MainActor
 final class WorkspaceWindowManager {
     static let shared = WorkspaceWindowManager()
-    private var tabGroups: [URL: WorkspaceTabGroup] = [:]
+    private var controllers: [URL: WorkspaceWindowController] = [:]
 
     private init() {}
 
@@ -17,8 +17,8 @@ final class WorkspaceWindowManager {
     /// dropped when the app quits within the debounce window, since these plain `NSWindow`s
     /// aren't guaranteed to receive `willCloseNotification` as part of app termination.
     func flushAllPendingAutosaves() {
-        for group in tabGroups.values {
-            group.flushAllPendingAutosaves()
+        for controller in controllers.values {
+            controller.flushAllPendingAutosaves()
         }
     }
 
@@ -34,14 +34,14 @@ final class WorkspaceWindowManager {
 
     func open(folder url: URL) {
         let key = url.standardizedFileURL
-        if let existing = tabGroups[key] {
+        if let existing = controllers[key] {
             existing.bringToFront()
             return
         }
 
-        let group = WorkspaceTabGroup(folderURL: key)
-        group.onEmpty = { [weak self] in self?.tabGroups[key] = nil }
-        tabGroups[key] = group
-        group.openInitialTab()
+        let controller = WorkspaceWindowController(folderURL: key)
+        controller.onEmpty = { [weak self] in self?.controllers[key] = nil }
+        controllers[key] = controller
+        controller.openInitialTab()
     }
 }
