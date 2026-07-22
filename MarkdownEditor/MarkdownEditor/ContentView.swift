@@ -11,7 +11,13 @@ struct ContentView: View {
     @Binding var document: MarkdownDocument
 
     var body: some View {
-        EditorView(text: $document.text)
+        HSplitView {
+            EditorView(text: $document.text)
+                .frame(minWidth: 300)
+            PreviewView(text: $document.text)
+                .frame(minWidth: 300)
+        }
+        .frame(minWidth: 620, minHeight: 400)
     }
 }
 
