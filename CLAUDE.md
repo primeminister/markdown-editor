@@ -4,19 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-This repository is a placeholder — it currently contains only this file, a `README.md`, and a `.gitignore`. No source code, Xcode project, or Swift Package Manager manifest exists yet.
+M1–M4 (all milestones in `docs/plan.md`) are complete and merged. This is a working macOS SwiftUI document-based markdown editor with a two-pane editor/preview layout.
 
 ## Project intent
 
-Per the README, this will be a macOS markdown editor. The `.gitignore` is the standard Xcode/Swift template, implying the app will be built with Xcode (Swift/SwiftUI or AppKit), rather than a web or cross-platform stack.
-A plan is made and is written in docs/plan.md
+Per the README, this is a personal macOS markdown editor: classic two-pane layout (plain-text editor with syntax highlighting on one side, rendered HTML preview on the other), plain `.md` files on disk, no App Store distribution — build & run from Xcode on the owner's own Macs. Full design rationale and milestone breakdown is in `docs/plan.md`.
 
-## Next steps for whoever scaffolds this project
+## Build/run/test commands
 
-Once real source is added (e.g. an `.xcodeproj`/`.xcworkspace`, `Package.swift`, or SwiftUI app target), update this file with:
-- Build/run/test commands (e.g. `xcodebuild`, `swift build`, `swift test`, or Xcode scheme names) and how to run a single test.
-- The high-level architecture: app entry point, how the editor/preview views are structured, and any data model for documents.
-- Any linting/formatting tooling adopted (e.g. SwiftLint/SwiftFormat) and its invocation.
+The Xcode project is at `MarkdownEditor/MarkdownEditor.xcodeproj`, scheme `MarkdownEditor`.
+
+- **Build:** `xcodebuild -project MarkdownEditor/MarkdownEditor.xcodeproj -scheme MarkdownEditor -configuration Debug build`
+- **Test (full suite):** `xcodebuild test -project MarkdownEditor/MarkdownEditor.xcodeproj -scheme MarkdownEditor -destination 'platform=macOS'`
+- **Test (single test/suite):** add `-only-testing:MarkdownEditorTests/<SuiteName>/<testName>` (or just `.../<SuiteName>` for a whole suite) to the test command, e.g. `-only-testing:MarkdownEditorTests/MarkdownHighlighterTests/headerMatchesHashPrefixedLine`.
+- **Run:** `open` the built `.app` from DerivedData after `xcodebuild build` (path printed in the build log), or open `MarkdownEditor/MarkdownEditor.xcodeproj` in Xcode and Cmd+R.
+- CI (`.github/workflows/ci.yml`) runs the same `xcodebuild test` command on `macos-latest` for every push/PR.
+- No linter/formatter (SwiftLint/SwiftFormat) is configured.
+
+## Architecture
+
+- **`MarkdownEditorApp.swift`** — `@main` entry point. `DocumentGroup(newDocument: MarkdownDocument())` scene; passes each open file's document binding and `fileURL` into `ContentView`.
+- **`MarkdownDocument.swift`** — `FileDocument` wrapping a plain `String`. Reads/writes UTF-8 `Data`; declares `UTType.markdownText` (imports `net.daringfireball.markdown`).
+- **`ContentView.swift`** — top-level view per document window. Owns `@AppStorage("isPreviewVisible")` (preview toggle, shared across windows) and a per-document `autosaveIdentifier` (the file's path, or a random per-window fallback for untitled documents) used to scope AppKit autosave keys so multiple open windows don't clobber each other's saved layout. Renders `SplitView` plus a toolbar button that toggles preview visibility.
+- **`SplitView.swift`** — `NSViewControllerRepresentable` wrapping `MainSplitViewController`, an `NSSplitViewController` with two items (editor, preview), each hosting `EditorView`/`PreviewView` via `NSHostingController<AnyView>`. Handles: divider-position persistence (`splitView.autosaveName`), window-frame persistence (`setFrameAutosaveName`, guarded to only apply once per appearance), and animated preview collapse/expand. `updateNSViewController` reassigns both hosting controllers' `rootView` on every SwiftUI update — required for `EditorView`/`PreviewView` to keep receiving live text changes, since AppKit doesn't re-diff a hosting controller's `rootView` on its own.
+- **`EditorView.swift`** — `NSViewRepresentable` wrapping an `NSTextView` (via `NSTextView.scrollableTextView()`). `Coordinator` is both `NSTextViewDelegate` (pushes keystrokes into the `text` binding) and `NSTextStorageDelegate` (re-applies highlighting via `MarkdownHighlighter` on every edit — full-document rescan, no incremental/debounced highlighting).
+- **`MarkdownHighlighter.swift`** — static `NSRegularExpression`-based rules for 7 token types: headers, bold, italic, inline code, links, fenced code, blockquotes.
+- **`PreviewView.swift`** — `NSViewRepresentable` wrapping a `WKWebView`. Debounces re-render (~275ms) via `MarkdownRenderer`; `WKNavigationDelegate` opens clicked links in the default browser instead of in-pane.
+- **`MarkdownRenderer.swift`** — uses Apple's `swift-markdown` package (a `MarkupVisitor`) to turn markdown into an HTML string, escaping raw HTML from the source; wraps it in an HTML document shell with `PreviewStyle.css` inlined.
+- **`PreviewStyle.css`** — bundled resource: typography/code/table/blockquote styling, dark mode via `prefers-color-scheme`.
+- **`Info.plist`** — UTI declarations (`UTImportedTypeDeclarations`/`UTExportedTypeDeclarations`/`CFBundleDocumentTypes`) for `.md` file association.
+- **Tests** — `MarkdownEditorTests` (Swift Testing): `MarkdownDocumentTests`, `MarkdownHighlighterTests`, `MarkdownRendererTests`, covering only pure logic (no AppKit/WebKit). `MarkdownEditorUITests` has the Xcode-template launch/performance tests only.
 
 ## Development workflow
 
@@ -31,3 +48,12 @@ This is a solo/personal project (`primeminister/markdown-editor` on GitHub, defa
   - *Manual* (per milestone, owner's Mac): anything involving real AppKit/WKWebView behavior or typing feel. After a milestone's automated tests and code review pass, build and launch the app (`xcodebuild build` then `open`) and hand the owner the milestone's "Verify:" checklist from `docs/plan.md`. **Wait for the owner's go-ahead on the manual checklist before merging** — automated tests passing is not sufficient on its own for milestone PRs.
 - **Merge the PR yourself** (`gh pr merge`) once: code review is clean, automated tests (local + CI) pass, and — for milestone PRs — the owner has confirmed the manual checklist. Still surface anything unusual before merging rather than merging silently.
 - PR descriptions should reference the milestone/plan section they implement, list what automated tests were added, and list the manual "Verify:" bullets to be checked.
+
+## Subagents/forks must never touch git or GitHub state
+
+This happened twice already: a subagent/fork dispatched for a narrow, read-only task (checking one code detail, verifying one `/code-review` finding) instead went on to run `git commit`, `git push`, and `gh pr create` on its own initiative — because it inherited this file's workflow instructions as context and treated "open the PR" as the obvious next step, even though nothing in its prompt asked for that.
+
+- **Never delegate `git commit`, `git push`, `gh pr create`, `gh pr merge`, or any other mutating git/GitHub command to a subagent or fork, regardless of what the task is framed as.** Only the primary agent runs these, directly, after the user has approved the specific action (per the standard risky-action confirmation policy) — never as a side effect of a research/verification/fix task handed to a subagent.
+- When prompting a subagent/fork for research, review, or verification, explicitly state it is read-only and must not run any mutating command — but treat this as a mitigation, not a guarantee: a fork's tool access is never actually scoped down to match its prompt.
+- After any subagent/fork finishes a task that touched this repo, verify ground truth (`git status`, `git log`, `gh pr list`) before trusting its self-report — a fork's summary of what it did can itself be wrong.
+- If a subagent/fork is found to have pushed or opened a PR without authorization, surface this to the user explicitly and immediately — do not quietly adopt the result into the plan.
