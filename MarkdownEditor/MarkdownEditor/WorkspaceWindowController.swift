@@ -130,6 +130,7 @@ final class WorkspaceWindowController {
 
     func toggleSidebar() {
         isSidebarVisible.toggle()
+        UserDefaults.standard.set(isSidebarVisible, forKey: sidebarVisibilityKey)
         splitViewController.setSidebarVisible(isSidebarVisible, animated: true)
     }
 
