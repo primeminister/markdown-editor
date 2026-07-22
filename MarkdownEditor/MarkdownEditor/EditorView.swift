@@ -68,9 +68,24 @@ struct EditorView: NSViewRepresentable {
 
     final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
         var text: Binding<String>
+        // Set in shouldChangeTextIn (pre-edit) when the affected line contains a fence marker so
+        // that the subsequent didProcessEditing forces a full rescan rather than a paragraph-only
+        // update. This prevents stale fenced-code attributes from lingering outside the edited
+        // range when a fence boundary is broken or created.
+        private var needsFullRescan = false
 
         init(text: Binding<String>) {
             self.text = text
+        }
+
+        func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+            let nsString = textView.string as NSString
+            let clampedLocation = min(affectedCharRange.location, nsString.length)
+            let lineRange = nsString.lineRange(for: NSRange(location: clampedLocation, length: 0))
+            if nsString.range(of: "```", options: [], range: lineRange).location != NSNotFound {
+                needsFullRescan = true
+            }
+            return true
         }
 
         func textDidChange(_ notification: Notification) {
@@ -85,7 +100,9 @@ struct EditorView: NSViewRepresentable {
             changeInLength delta: Int
         ) {
             guard editedMask.contains(.editedCharacters) else { return }
-            MarkdownHighlighter.applyHighlighting(to: textStorage, editedRange: editedRange)
+            let range: NSRange? = needsFullRescan ? nil : editedRange
+            needsFullRescan = false
+            MarkdownHighlighter.applyHighlighting(to: textStorage, editedRange: range)
         }
     }
 }
