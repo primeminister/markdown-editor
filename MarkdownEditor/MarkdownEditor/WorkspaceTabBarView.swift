@@ -9,22 +9,34 @@ import SwiftUI
 /// filename (no stretching to fill the bar), with a close button only for now.
 struct WorkspaceTabBarView: View {
     let windowController: WorkspaceWindowController
+    @AppStorage("isPreviewVisible") private var isPreviewVisible: Bool = true
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                ForEach(windowController.tabs, id: \.id) { tab in
-                    TabChip(
-                        title: tab.selectedFileURL?.lastPathComponent ?? windowController.folderModel.folderURL.lastPathComponent,
-                        isActive: tab === windowController.activeTab,
-                        onSelect: { windowController.activate(tab) },
-                        onClose: { windowController.closeTab(tab) }
-                    )
+        HStack(spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 2) {
+                    ForEach(windowController.tabs, id: \.id) { tab in
+                        TabChip(
+                            title: tab.selectedFileURL?.lastPathComponent ?? windowController.folderModel.folderURL.lastPathComponent,
+                            isActive: tab === windowController.activeTab,
+                            onSelect: { windowController.activate(tab) },
+                            onClose: { windowController.closeTab(tab) }
+                        )
+                    }
                 }
+                .padding(.horizontal, 6)
             }
-            .padding(.horizontal, 6)
+            Spacer(minLength: 8)
+            Button {
+                isPreviewVisible.toggle()
+            } label: {
+                Image(systemName: isPreviewVisible ? "eye.slash" : "eye")
+            }
+            .buttonStyle(.borderless)
+            .help(isPreviewVisible ? "Hide Preview" : "Show Preview")
+            .padding(.trailing, 8)
         }
-        .frame(height: 32)
+        .frame(height: 38)
         .background(.thinMaterial)
     }
 }
@@ -36,7 +48,7 @@ private struct TabChip: View {
     let onClose: () -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 8) {
             // Tap gesture is scoped to just the label, as a sibling of the close button below --
             // not wrapping the whole chip, which would nest the close `Button`'s hit region inside
             // this gesture's and risk both firing for one click on the close button (this codebase
@@ -51,10 +63,14 @@ private struct TabChip: View {
             }
             .buttonStyle(.borderless)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 7)
         .fixedSize()
         .background(isActive ? Color.accentColor.opacity(0.2) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(isActive ? Color.clear : Color.secondary.opacity(0.35), lineWidth: 1)
+        )
     }
 }
