@@ -24,7 +24,7 @@ struct EditorView: NSViewRepresentable {
         Coordinator(text: $text)
     }
 
-    private var fontSize: CGFloat { CGFloat(editorFontSize) }
+    private var fontSize: CGFloat { CGFloat(EditorFontSize.clamped(editorFontSize)) }
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
