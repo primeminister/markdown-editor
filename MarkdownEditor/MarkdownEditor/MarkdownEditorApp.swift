@@ -9,9 +9,19 @@ import SwiftUI
 
 @main
 struct MarkdownEditorApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     var body: some Scene {
         DocumentGroup(newDocument: MarkdownDocument()) { file in
             ContentView(document: file.$document, fileURL: file.fileURL)
+        }
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("Open Folder…") {
+                    WorkspaceWindowManager.shared.presentOpenPanel()
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+            }
         }
     }
 }

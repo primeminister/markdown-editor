@@ -30,6 +30,15 @@ struct SplitView: NSViewControllerRepresentable {
     }
 }
 
+/// Single source of truth for the AppKit autosave-name format so `MainSplitViewController` and any
+/// external code that needs to apply the same window-frame autosave name before this controller
+/// exists (e.g. `WorkspaceWindowManager`) can't drift out of sync with two independently-typed strings.
+enum SplitViewAutosaveNaming {
+    static func windowName(for identifier: String) -> String { "MainWindow-\(identifier)" }
+    static func splitName(for identifier: String) -> String { "MainSplit-\(identifier)" }
+    static func workspaceSidebarName(for identifier: String) -> String { "WorkspaceSidebar-\(identifier)" }
+}
+
 final class MainSplitViewController: NSSplitViewController {
     private let previewItem: NSSplitViewItem
     private let editorHostingController: NSHostingController<AnyView>
@@ -65,8 +74,9 @@ final class MainSplitViewController: NSSplitViewController {
         // divider position across launches — no manual Codable/UserDefaults plumbing needed.
         // Scoped per document via `autosaveIdentifier` so multiple open document windows don't
         // clobber each other's saved divider position.
-        splitView.identifier = NSUserInterfaceItemIdentifier("MainSplit-\(autosaveIdentifier)")
-        splitView.autosaveName = "MainSplit-\(autosaveIdentifier)"
+        let splitAutosaveName = SplitViewAutosaveNaming.splitName(for: autosaveIdentifier)
+        splitView.identifier = NSUserInterfaceItemIdentifier(splitAutosaveName)
+        splitView.autosaveName = splitAutosaveName
     }
 
     @available(*, unavailable)
@@ -81,7 +91,7 @@ final class MainSplitViewController: NSSplitViewController {
         // unsaved move/resize. Scoped per document, like the split autosave name above.
         guard !hasSetWindowAutosaveName else { return }
         hasSetWindowAutosaveName = true
-        view.window?.setFrameAutosaveName("MainWindow-\(autosaveIdentifier)")
+        view.window?.setFrameAutosaveName(SplitViewAutosaveNaming.windowName(for: autosaveIdentifier))
     }
 
     func update(text: Binding<String>, isPreviewVisible: Bool) {
