@@ -21,10 +21,16 @@ final class WorkspaceAutosaveController {
         pendingWorkItem?.cancel()
         pendingURL = url
         pendingText = text
-        let workItem = DispatchWorkItem { [weak self] in
-            self?.write(text: text, to: url)
-            self?.pendingWorkItem = nil
+
+        var workItem: DispatchWorkItem!
+        workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.pendingWorkItem === workItem, !workItem.isCancelled else { return }
+            self.write(text: text, to: url)
+            self.pendingWorkItem = nil
+            self.pendingURL = nil
+            self.pendingText = nil
         }
+
         pendingWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.debounceInterval, execute: workItem)
     }
