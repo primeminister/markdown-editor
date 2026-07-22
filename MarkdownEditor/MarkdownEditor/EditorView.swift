@@ -50,6 +50,10 @@ struct EditorView: NSViewRepresentable {
         guard textView.string != text else { return }
         let selectedRanges = textView.selectedRanges
         textView.string = text
+        // A different document's content just replaced this text view's buffer wholesale (e.g. the
+        // sidebar switched files onto this same NSTextView instance) -- any undo actions still on the
+        // stack were recorded against the PREVIOUS content and would corrupt this one if replayed.
+        textView.undoManager?.removeAllActions()
         // `.string` mutates the text storage, which re-triggers the delegate's
         // `didProcessEditing` (already re-highlights) — no explicit call needed here.
         let maxLocation = (text as NSString).length
