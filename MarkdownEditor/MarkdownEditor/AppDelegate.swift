@@ -11,6 +11,22 @@ import AppKit
 /// means `DocumentGroup`'s automatic open-URL handling no longer fires on its own for
 /// `application(_:open:)`, so the plain-file case must be explicitly forwarded here.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var didRestoreSession = false
+
+    /// Runs before AppKit decides whether to open a blank "Untitled" document window, so a
+    /// restored session can suppress that via `applicationShouldOpenUntitledFile(_:)` below.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        didRestoreSession = WorkspaceWindowManager.shared.restorePreviousSession()
+    }
+
+    // AppKit also calls this later in the app's life (e.g. a Dock-icon click while no windows are
+    // open), not just at launch -- consume the flag on first read so a launch-time restore doesn't
+    // permanently suppress the blank-document fallback for the rest of the session.
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        defer { didRestoreSession = false }
+        return !didRestoreSession
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             var isDirectory: ObjCBool = false
@@ -32,5 +48,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // user quits within the debounce window would be silently dropped.
     func applicationWillTerminate(_ notification: Notification) {
         WorkspaceWindowManager.shared.flushAllPendingAutosaves()
+        WorkspaceWindowManager.shared.snapshotForRestoration()
     }
 }

@@ -139,6 +139,26 @@ final class WorkspaceWindowController {
         window.makeKeyAndOrderFront(nil)
     }
 
+    /// Session restore on launch: one permanent tab per surviving file path (none becomes
+    /// `previewTab`, matching the "freshly opened folder" behavior -- the first sidebar single-click
+    /// after relaunch mints its own preview tab rather than reusing a restored one). Files that no
+    /// longer exist (or were replaced by a directory of the same name) are silently skipped; if none
+    /// survive, the window still opens in the existing empty state rather than erroring. Window is
+    /// brought forward before `selectFile` runs, matching `openPreview`/`openPermanent`'s ordering --
+    /// `selectFile` can show a blocking alert on a failed read, so the window needs to already be on
+    /// screen when that happens.
+    func restoreTabs(filePaths: [String], activeFilePath: String?) {
+        window.makeKeyAndOrderFront(nil)
+        for path in filePaths {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), !isDirectory.boolValue else { continue }
+            let tab = makeTab()
+            tab.selectFile(URL(fileURLWithPath: path))
+        }
+        activeTab = tabs.first { $0.selectedFileURL?.path == activeFilePath } ?? tabs.first
+        syncWindowTitle()
+    }
+
     func flushAllPendingAutosaves() {
         for tab in tabs {
             tab.autosave.flush()
