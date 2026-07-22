@@ -40,7 +40,7 @@ struct MarkdownEditorApp: App {
                 Button("Increase Font Size") {
                     editorFontSize = EditorFontSize.clamped(editorFontSize + EditorFontSize.step)
                 }
-                .keyboardShortcut("+", modifiers: .command)
+                .keyboardShortcut("=", modifiers: .command)
 
                 Button("Decrease Font Size") {
                     editorFontSize = EditorFontSize.clamped(editorFontSize - EditorFontSize.step)
