@@ -86,7 +86,11 @@ Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj 
 
 
 ## Next features to implement:
-1. App preferences:
+1. create custom tab and sidebar:
+	- make sidebar window height
+	- tab width is size of filename
+	- tabs only are visile above editor/preview window.
+2. App preferences:
 	- keyboard shortcut to turn on/off preview
 	- Other suggestions?
 2. When clicking help we have an extra menu that displays the contents of https://www.markdownguide.org/cheat-sheet/ for Markdown cheatsheet
