@@ -36,6 +36,7 @@ struct SplitView: NSViewControllerRepresentable {
 enum SplitViewAutosaveNaming {
     static func windowName(for identifier: String) -> String { "MainWindow-\(identifier)" }
     static func splitName(for identifier: String) -> String { "MainSplit-\(identifier)" }
+    static func workspaceSidebarName(for identifier: String) -> String { "WorkspaceSidebar-\(identifier)" }
 }
 
 final class MainSplitViewController: NSSplitViewController {

@@ -41,8 +41,9 @@ final class WorkspaceWindowManager {
         }
 
         let autosave = WorkspaceAutosaveController()
-        let hostingController = NSHostingController(rootView: WorkspaceView(folderURL: key, autosave: autosave))
-        let window = NSWindow(contentViewController: hostingController)
+        let model = WorkspaceModel(folderURL: key, autosave: autosave)
+        let splitViewController = WorkspaceSplitViewController(model: model)
+        let window = NSWindow(contentViewController: splitViewController)
         window.title = key.lastPathComponent
         window.setContentSize(NSSize(width: 900, height: 600))
         // Applied here (covers the window before any file is selected) and again, harmlessly,
