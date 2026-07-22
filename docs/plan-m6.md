@@ -107,7 +107,7 @@ let tabGroup: WorkspaceTabGroup
 ```
 One extra call alongside the existing autosave scheduling — this is the "editing the preview tab's content promotes it to permanent" trigger.
 
-### 7. `WorkspaceModel.swift`, `FileRow.swift`, `FileNode.swift` — unchanged
+### 7. `WorkspaceModel.swift`, `FileNode.swift` — unchanged
 
 No structural changes needed; `WorkspaceModel.selectFile`/`loadTree` are already per-instance and work as-is when there are multiple instances per folder instead of one.
 
@@ -120,7 +120,12 @@ No structural changes needed; `WorkspaceModel.selectFile`/`loadTree` are already
 
 Not fixed, noted here instead per the project's "note uncertain findings in the PR description" policy:
 - **`bringToFront()`'s `tabs.first` fallback is oldest-created, not most-recently-active.** Only matters once every tab in a group has been pinned (no `previewTab` left) and the folder is reopened via the menu/Finder rather than by clicking its already-visible window/Dock icon — judged too narrow an edge case to justify adding window-activation tracking for.
-- **Tap-gesture exclusivity between `.onTapGesture(count: 2)` and `.onTapGesture(count: 1)` on the same sidebar row** is the standard SwiftUI single-vs-double-tap idiom, but this specific context (a `List` row on macOS, hosted via `NSHostingController`) isn't a context the idiom's usual write-ups cover, and review couldn't settle from static reading alone whether a double-click could ever also fire the single-click handler. Added as an explicit manual-verify bullet below rather than guessed at in code.
+
+### Manual-testing fix: tap-gesture exclusivity was a real bug, not just a theoretical one
+
+Code review flagged (as `PLAUSIBLE`, unable to confirm from static reading) that chaining `.onTapGesture(count: 2)` + `.onTapGesture(count: 1)` on the same sidebar row might not be mutually exclusive in this specific context (a `List` row on macOS, hosted via `NSHostingController`). Manual testing on the owner's Mac confirmed it: double-clicking a file both loaded it into the preview tab (the count-1 handler firing) *and* opened it in a new permanent tab (the count-2 handler firing) — i.e. exactly the failure mode review couldn't rule out.
+
+Fixed in `FileRow.swift` by dropping the two independent `.onTapGesture` modifiers in favor of manual disambiguation: a single click schedules its action (`onSingleClick`) via a cancelable `DispatchWorkItem` delayed by `NSEvent.doubleClickInterval` (the system's actual configured double-click window); a second click within that window cancels the pending single-click action before it runs and fires `onDoubleClick` instead. This doesn't depend on SwiftUI's gesture-priority resolution at all, so it can't regress the same way. `FileRow` now owns this state and takes `onSingleClick`/`onDoubleClick` closures instead of exposing raw tap gestures to `WorkspaceSidebarView`.
 
 ## Out of scope for M6 (explicitly deferred / accepted trade-offs)
 - **Per-tab file-tree sharing.** Each tab re-walks the folder independently on open rather than sharing one cached tree across a group; fine at personal-use folder sizes, and there's no filesystem watcher in this app at all yet (M5 didn't have one either) so trees can already go stale within a single window if files change externally — not a regression introduced here.
@@ -135,6 +140,7 @@ Not fixed, noted here instead per the project's "note uncertain findings in the 
 - `MarkdownEditor/MarkdownEditor/WorkspaceSplitViewController.swift` (edit)
 - `MarkdownEditor/MarkdownEditor/WorkspaceSidebarView.swift` (edit)
 - `MarkdownEditor/MarkdownEditor/WorkspaceDetailView.swift` (edit)
+- `MarkdownEditor/MarkdownEditor/FileRow.swift` (edit — manual-testing fix, see above)
 
 No new automated tests planned: like M5's own `WorkspaceWindowManager`, this milestone is entirely `NSWindow`/tab-group orchestration with no pure-logic surface worth extracting — covered by the manual checklist below only, per the project's testing strategy.
 
@@ -143,7 +149,7 @@ No new automated tests planned: like M5's own `WorkspaceWindowManager`, this mil
 - Automated: `xcodebuild test -project MarkdownEditor/MarkdownEditor.xcodeproj -scheme MarkdownEditor -destination 'platform=macOS'` — existing suite must still pass unchanged.
 - Manual (owner's Mac, per project workflow — hand off the checklist, wait for go-ahead before merge):
   - Open a folder; single-click through several `.md` files in the sidebar — content swaps in place in the same tab/window, no new tabs appear.
-  - Double-click a `.md` file — opens as a new native tab (visible tab bar) in the same window's tab group; the sidebar in the new tab matches the original. Confirm it's exactly **one** new tab, not two (i.e. the double-click didn't also fire a spurious single-click preview-tab load first) — flagged as uncertain by code review, see above.
+  - Double-click a `.md` file — opens as a new native tab (visible tab bar) in the same window's tab group; the sidebar in the new tab matches the original. Confirm it's exactly **one** new tab, not two, and the previously-active tab's content is untouched (regression check for the manual-testing fix above).
   - Double-click a file, then check the tab bar: each tab's label shows the *file name* it's displaying, not the folder name repeated on every tab.
   - After double-clicking (creating a permanent tab), single-click other files in the sidebar from either tab — browsing continues to reuse a preview tab and never disturbs the pinned/permanent tab.
   - Type into the current preview tab's content, then single-click a different file elsewhere in the sidebar — the edited tab is now pinned (its content stays put) and a fresh preview tab is used for the new selection.

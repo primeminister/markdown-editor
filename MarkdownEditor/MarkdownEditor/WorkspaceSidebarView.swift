@@ -13,15 +13,18 @@ struct WorkspaceSidebarView: View {
         Group {
             if let root = model.root {
                 List(root.children ?? [], children: \.children) { node in
-                    FileRow(node: node, isSelected: node.url == model.selectedFileURL)
-                        .onTapGesture(count: 2) {
+                    FileRow(
+                        node: node,
+                        isSelected: node.url == model.selectedFileURL,
+                        onSingleClick: {
+                            guard node.isMarkdown else { return }
+                            tabGroup.openPreview(node.url)
+                        },
+                        onDoubleClick: {
                             guard node.isMarkdown else { return }
                             tabGroup.openPermanent(node.url)
                         }
-                        .onTapGesture(count: 1) {
-                            guard node.isMarkdown else { return }
-                            tabGroup.openPreview(node.url)
-                        }
+                    )
                 }
             } else {
                 ProgressView()
