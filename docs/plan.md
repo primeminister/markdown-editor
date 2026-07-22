@@ -21,7 +21,7 @@ A standard SwiftUI document-based app (`DocumentGroup`/`FileDocument`), using Ap
 2. `File > New > Project…` → macOS → **Application > Document App** template (not plain "App" — this scaffolds `DocumentGroup`/`FileDocument`/UTType plumbing for free).
    - Product Name: `MarkdownEditor`
    - Organization Identifier: `nl.mowd` → bundle id `nl.mowd.MarkdownEditor`
-   - Interface: SwiftUI, Language: Swift, uncheck "Include Tests"
+   - Interface: SwiftUI, Language: Swift, **check "Include Tests"** (Testing System: Swift Testing) — scaffolds a `MarkdownEditorTests` target
    - Location: this repo folder; uncheck "Create Git repository" (one already exists)
    - Deployment target: macOS 14.0 (bump higher if both Macs are confirmed newer)
 3. `File > Add Package Dependencies…` → `https://github.com/swiftlang/swift-markdown.git` → Up to Next Major Version from `0.8.0` → add `Markdown` library to the target.
@@ -49,11 +49,25 @@ Key design decisions:
 - **Editor**: `NSTextView`, not SwiftUI `TextEditor`, for undo grouping and attribute-level control. Disable smart quotes/dashes (they corrupt literal markdown syntax). Monospaced font. Highlighting via precompiled `NSRegularExpression`s applied in `NSTextStorageDelegate.textStorage(_:didProcessEditingFor:range:changeInLength:)`. Start with a simple full-document rescan per edit (personal note files are small — sub-millisecond); don't build incremental/debounced highlighting until it's actually observed to lag.
 - **Preview**: parse with `swift-markdown`, walk with a custom `MarkupVisitor` emitting HTML (covers GFM tables, nested lists, code fences "for free" via `<table>`/`<ul>`/`<pre>` instead of hand-rolled SwiftUI layout), render in `WKWebView` with a small bundled CSS file. Escape raw HTML in source rather than passing it through. Debounce re-render (~250-300ms) since a full WKWebView reload per keystroke would stutter — unlike the cheap editor highlighter.
 
+### Testing strategy
+
+Two layers, kept deliberately separate:
+
+- **Automated (Swift Testing, `MarkdownEditorTests` target).** Only pure logic gets unit tests — anything that's a plain function/struct taking input and returning output, no `NSTextView`/`WKWebView`/`DocumentGroup` involved:
+  - `MarkdownDocument`: string round-trips through `init(configuration:)`/`fileWrapper(configuration:)`.
+  - `MarkdownHighlighter`: given source text, each of the 7 token types (headers, bold, italic, inline code, links, fenced code, blockquotes) produces the expected match ranges.
+  - `MarkdownRenderer`: given markdown input, the emitted HTML contains the expected structure (tables, nested lists, code fences) and raw HTML in source is escaped, not passed through.
+  - Word count / other small pure helpers introduced in M4.
+  - Runs via `xcodebuild test -project MarkdownEditor.xcodeproj -scheme MarkdownEditor -destination 'platform=macOS'`, both locally and in CI (see below).
+- **Manual (per milestone, on the owner's own Mac).** Anything involving actual AppKit views, window chrome, or feel-under-typing — the "Verify:" bullets below. Claude builds and launches the app (`xcodebuild build` then `open`) after each milestone's PR is ready; the owner clicks through the checklist and gives go-ahead before merge. These are not automated and not worth trying to automate for a 2-machine personal app.
+
+**CI:** `.github/workflows/ci.yml`, added as part of the M1 PR (needs the `.xcodeproj` to exist first) — runs `xcodebuild test` on `macos-latest` for every push/PR. Gates merges on the automated layer; the manual layer is a separate, human-in-the-loop gate per milestone.
+
 ### Milestones (each independently runnable/testable)
 
-1. **M1 — skeleton, open/save round-trip.** Stock `TextEditor(text: $document.text)` temporarily; Info.plist UTI edits. Verify: create/save/reopen a `.md` file, confirm Finder "Open With" lists the app.
-2. **M2 — custom editor + highlighting.** Swap in `EditorView`/`MarkdownHighlighter`. Verify: undo/redo works, all 7 token types render distinctly, typing feels instant on a ~500-line file.
-3. **M3 — live preview.** Add `swift-markdown`, `MarkdownRenderer`, `PreviewStyle.css`, `PreviewView`, assemble `HSplitView`. Verify: tables/nested lists/code fences render correctly, external links open in browser not in-pane, dark/light mode switches live.
-4. **M4 — polish.** Preview toggle, live word count, window/split-position restoration. Verify: toggle doesn't glitch layout, count updates live, state persists across relaunch.
+1. **M1 — skeleton, open/save round-trip.** Stock `TextEditor(text: $document.text)` temporarily; Info.plist UTI edits; add `MarkdownDocument` round-trip tests; add `.github/workflows/ci.yml`. Verify: create/save/reopen a `.md` file, confirm Finder "Open With" lists the app.
+2. **M2 — custom editor + highlighting.** Swap in `EditorView`/`MarkdownHighlighter`; add `MarkdownHighlighter` unit tests covering all 7 token types. Verify: undo/redo works, all 7 token types render distinctly, typing feels instant on a ~500-line file.
+3. **M3 — live preview.** Add `swift-markdown`, `MarkdownRenderer`, `PreviewStyle.css`, `PreviewView`, assemble `HSplitView`; add `MarkdownRenderer` unit tests (tables, nested lists, code fences, HTML-escaping). Verify: tables/nested lists/code fences render correctly, external links open in browser not in-pane, dark/light mode switches live.
+4. **M4 — polish.** Preview toggle, live word count, window/split-position restoration; unit-test the word count helper. Verify: toggle doesn't glitch layout, count updates live, state persists across relaunch.
 
-Later, headless build verification is possible via `xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor -configuration Debug build`, but the UX checks above require actually running the app.
+Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor -configuration Debug build` and `... test ...` (see Testing strategy). The "Verify:" bullets above require actually running the app on the owner's Mac.
