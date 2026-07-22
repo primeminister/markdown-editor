@@ -7,6 +7,7 @@ import SwiftUI
 
 struct WorkspaceDetailView: View {
     @Bindable var model: WorkspaceModel
+    let tabGroup: WorkspaceTabGroup
     @AppStorage("isPreviewVisible") private var isPreviewVisible: Bool = true
 
     var body: some View {
@@ -18,6 +19,7 @@ struct WorkspaceDetailView: View {
                 .onChange(of: model.text) { _, newValue in
                     guard let url = model.selectedFileURL, newValue != model.loadedText else { return }
                     model.autosave.schedule(text: newValue, to: url)
+                    tabGroup.notifyEdited(model)
                 }
         } else {
             ContentUnavailableView("Select a Markdown File", systemImage: "doc.text")
