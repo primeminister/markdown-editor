@@ -75,10 +75,9 @@ Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj 
 
 
 ## Next features to implement:
-1. App preferences:
-	- keyboard shortcut to turn on/off 
+1. Open a folder(s) in a sidebar with folder navigation to quickly open files within those folders.
+2. App preferences:
+	- keyboard shortcut to turn on/off preview
 	- Other suggestions?
-2. Open a folder(s) in a sidebar with folder navigation to quickly open files within those folders.
 3. When clicking help we have an extra menu that displays the contents of https://www.markdownguide.org/cheat-sheet/ for Markdown cheatsheet
 4. Scrolling preview where the cursor is in the editor.
-5. kjhaskd haskjjkh ashdh k
