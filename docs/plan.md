@@ -66,33 +66,65 @@ Two layers, kept deliberately separate:
 
 ### Milestones (each independently runnable/testable)
 
-1. [x] **M1 — skeleton, open/save round-trip.** Stock `TextEditor(text: $document.text)` temporarily; Info.plist UTI edits; add `MarkdownDocument` round-trip tests; add `.github/workflows/ci.yml`. Verify: create/save/reopen a `.md` file, confirm Finder "Open With" lists the app.
-2. [x] **M2 — custom editor + highlighting.** Swap in `EditorView`/`MarkdownHighlighter`; add `MarkdownHighlighter` unit tests covering all 7 token types. Verify: undo/redo works, all 7 token types render distinctly, typing feels instant on a ~500-line file.
-3. [x] **M3 — live preview.** Add `swift-markdown`, `MarkdownRenderer`, `PreviewStyle.css`, `PreviewView`, assemble `HSplitView`; add `MarkdownRenderer` unit tests (tables, nested lists, code fences, HTML-escaping). Verify: tables/nested lists/code fences render correctly, external links open in browser not in-pane, dark/light mode switches live.
-4. [x] **M4 — polish.** Preview toggle, ~~live word count~~, window/split-position restoration; ~~unit-test the word count helper.~~ Verify: toggle doesn't glitch layout, ~~count updates live~~, state persists across relaunch.
-5. [x] **M5 — Open Folder + sidebar, single-window file switching (no tabs yet).**
+#### Milestone 1
+Status: [x] Done
+
+**M1 — skeleton, open/save round-trip.** Stock `TextEditor(text: $document.text)` temporarily; Info.plist UTI edits; add `MarkdownDocument` round-trip tests; add `.github/workflows/ci.yml`. Verify: create/save/reopen a `.md` file, confirm Finder "Open With" lists the app.
+
+#### Milestone 2
+Status: [x] Done
+
+**M2 — custom editor + highlighting.** Swap in `EditorView`/`MarkdownHighlighter`; add `MarkdownHighlighter` unit tests covering all 7 token types. Verify: undo/redo works, all 7 token types render distinctly, typing feels instant on a ~500-line file.
+
+#### Milestone 3
+Status: [x] Done
+
+**M3 — live preview.** Add `swift-markdown`, `MarkdownRenderer`, `PreviewStyle.css`, `PreviewView`, assemble `HSplitView`; add `MarkdownRenderer` unit tests (tables, nested lists, code fences, HTML-escaping). Verify: tables/nested lists/code fences render correctly, external links open in browser not in-pane, dark/light mode switches live.
+
+#### Milestone 4
+Status: [x] Done
+
+**M4 — polish.** Preview toggle, ~~live word count~~, window/split-position restoration; ~~unit-test the word count helper.~~ Verify: toggle doesn't glitch layout, ~~count updates live~~, state persists across relaunch.
+
+#### Milestone 5
+Status: [x] Done
+
+**M5 — Open Folder + sidebar, single-window file switching (no tabs yet).**
    - `File > Open Folder…` menu command (`NSOpenPanel`, directory mode). Also route Finder-side opening (drag a folder onto the app / right-click "Open With") through `application(_:open:)` on an `NSApplicationDelegateAdaptor` — this requires declaring `public.folder` handling in `Info.plist` separately from the existing `.md` UTI declarations, since Finder won't offer "Open With" for a folder otherwise.
    - New workspace window type (a second scene alongside the existing `DocumentGroup`, e.g. `WindowGroup`) with a sidebar showing the full recursive file tree of the opened folder, plus the existing `SplitView` editor/preview for whichever file is active. Sidebar is shown by default when a folder is opened.
    - Sidebar shows every file in the tree, but only `.md` files are active/clickable — all other files render grayed out/disabled and do nothing on click. This gives full folder context without implying non-markdown files are editable here.
    - Single-click on an active (`.md`) sidebar file loads it into that window's editor/preview, replacing whatever was previously shown (no tabs yet — every click just swaps content in place).
    - Opening a `.md` file directly from Finder is unchanged: existing `DocumentGroup` single-file window, no sidebar.
    - Verify: open a folder, sidebar appears by default with the full tree, non-`.md` files are visibly disabled and inert, single-click swaps `.md` files in place; double-clicking a `.md` file directly in Finder still opens the old plain editor window with no sidebar.
-6. [x] **M6 — Native tabs + preview/permanent tab promotion.**
+
+#### Milestone 6
+Status: [x] Done
+
+**M6 — Native tabs + preview/permanent tab promotion.**
    - Double-click an active sidebar file opens it in a new native macOS window tab (`NSWindow.addTabbedWindow`) within the same folder's tab group; every tab in the group shows the same sidebar.
    - Track one "preview" tab per tab group: single-click always reuses/replaces that tab's content (bringing it to front); double-click, or editing the preview tab's content, promotes it to a permanent tab, and the next single-click gets a fresh preview tab.
    - Verify: single-click browsing never spawns tabs; double-click or typing pins the file as a permanent tab; pinned tabs survive further single-click browsing elsewhere in the sidebar.
-7. [ ] **M7 — Custom in-window tabs + persistent full-height sidebar.** Full design in `docs/plan-m7.md`.
+
+#### Milestone 7
+Status: [x] Done
+
+**M7 — Custom in-window tabs + persistent full-height sidebar.** Full design in `docs/plan-m7.md`.
    - Replace M6's native window-tabs with a custom in-app tab strip: one real window per folder, sidebar spans the full window height (untouched by tab switching), tabs appear only above the editor/preview pane, sized to the filename.
    - Same preview/permanent-tab promotion behavior as M6, re-scoped from "tab = window" to "tab = a slot in one window's tab strip." Tabs get a close button only (drag-reorder, keyboard shortcuts, context menu deferred).
    - Sidebar gets a show/hide toggle (icon top-right of the sidebar); collapsing shrinks it to a narrow rail that still shows the icon, rather than hiding it entirely.
    - Verify: one window per folder with no OS-level tab bar; single-click/double-click/edit-promotion behavior matches M6; closing the last tab leaves the window/sidebar open in the empty state; sidebar toggle animates between full width and icon-only rail and persists across relaunch.
 
+#### Milestone 8
+Status: [ ] Not started
+
+**M8 — App preferences: keyboard shortcuts, editor font size, session restore.** Full design in `docs/plan-m8.md`.
+   - Menu commands (fixed shortcuts, no Settings window): ⌘/ toggles preview (works in both window types via the existing shared `isPreviewVisible` `@AppStorage`), ⌘B toggles the sidebar in folder windows (no-op in single-file windows), ⌘+/⌘−/⌘0 adjust/reset the editor's font size.
+   - Folder windows open at quit are restored on next launch, each with its tabs, active tab, and sidebar state as left; the default blank "Untitled" window is suppressed only when at least one folder window was actually restored.
+   - Verify: all five shortcuts work as described in both window types; font size persists and clamps at its bounds; quitting with multiple folder windows (varying tabs/active tab/sidebar state) and relaunching restores them faithfully, gracefully skipping any folder/file deleted since; quitting with no folder windows open still shows the normal blank document window on relaunch.
+
 Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor -configuration Debug build` and `... test ...` (see Testing strategy). The "Verify:" bullets above require actually running the app on the owner's Mac.
 
 
 ## Next features to implement:
-1. App preferences:
-	- keyboard shortcut to turn on/off preview
-	- Other suggestions?
-2. When clicking help we have an extra menu that displays the contents of https://www.markdownguide.org/cheat-sheet/ for Markdown cheatsheet
-3. Scrolling preview where the cursor is in the editor.
+1. When clicking help we have an extra menu that displays the contents of https://www.markdownguide.org/cheat-sheet/ for Markdown cheatsheet
+2. Scrolling preview where the cursor is in the editor.
