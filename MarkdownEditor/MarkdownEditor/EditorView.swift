@@ -49,7 +49,7 @@ struct EditorView: NSViewRepresentable {
         let selectedRanges = textView.selectedRanges
         textView.string = text
         // `.string` mutates the text storage, which re-triggers the delegate's
-        // `didProcessEditingFor` (already re-highlights) — no explicit call needed here.
+        // `didProcessEditing` (already re-highlights) — no explicit call needed here.
         let maxLocation = (text as NSString).length
         textView.selectedRanges = selectedRanges.map { rangeValue in
             let range = rangeValue.rangeValue
@@ -78,7 +78,7 @@ struct EditorView: NSViewRepresentable {
 
         func textStorage(
             _ textStorage: NSTextStorage,
-            didProcessEditingFor editedMask: NSTextStorageEditActions,
+            didProcessEditing editedMask: NSTextStorageEditActions,
             range editedRange: NSRange,
             changeInLength delta: Int
         ) {
