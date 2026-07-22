@@ -19,3 +19,11 @@ let y = 2
 | Left | Center | Right |
 | :--- | :----: | ----: |
 | a    | b      | c     |
+
+## Test
+
+Horizontal rule
+
+---
+
+and after the line
