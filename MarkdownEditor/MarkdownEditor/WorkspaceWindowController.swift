@@ -14,10 +14,11 @@ import Observation
 @Observable
 final class WorkspaceWindowController {
     let folderModel: WorkspaceFolderModel
+    private let sidebarVisibilityKey: String
     private(set) var window: NSWindow!
     private(set) var tabs: [WorkspaceTab] = []
     var activeTab: WorkspaceTab?
-    var isSidebarVisible = true
+    var isSidebarVisible: Bool
     private weak var previewTab: WorkspaceTab?
     private var splitViewController: WorkspaceSplitViewController!
     private var closeObserver: NSObjectProtocol?
@@ -27,7 +28,12 @@ final class WorkspaceWindowController {
 
     init(folderURL: URL) {
         self.folderModel = WorkspaceFolderModel(folderURL: folderURL)
+        sidebarVisibilityKey = "WorkspaceSidebarVisible-\(folderURL.path)"
+        isSidebarVisible = UserDefaults.standard.object(forKey: sidebarVisibilityKey) as? Bool ?? true
         setUpWindow(folderURL: folderURL)
+        if !isSidebarVisible {
+            splitViewController.setSidebarVisible(false, animated: false)
+        }
     }
 
     private func setUpWindow(folderURL: URL) {
