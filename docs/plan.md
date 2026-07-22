@@ -70,14 +70,14 @@ Two layers, kept deliberately separate:
 2. [x] **M2 — custom editor + highlighting.** Swap in `EditorView`/`MarkdownHighlighter`; add `MarkdownHighlighter` unit tests covering all 7 token types. Verify: undo/redo works, all 7 token types render distinctly, typing feels instant on a ~500-line file.
 3. [x] **M3 — live preview.** Add `swift-markdown`, `MarkdownRenderer`, `PreviewStyle.css`, `PreviewView`, assemble `HSplitView`; add `MarkdownRenderer` unit tests (tables, nested lists, code fences, HTML-escaping). Verify: tables/nested lists/code fences render correctly, external links open in browser not in-pane, dark/light mode switches live.
 4. [x] **M4 — polish.** Preview toggle, ~~live word count~~, window/split-position restoration; ~~unit-test the word count helper.~~ Verify: toggle doesn't glitch layout, ~~count updates live~~, state persists across relaunch.
-5. [ ] **M5 — Open Folder + sidebar, single-window file switching (no tabs yet).**
+5. [x] **M5 — Open Folder + sidebar, single-window file switching (no tabs yet).**
    - `File > Open Folder…` menu command (`NSOpenPanel`, directory mode). Also route Finder-side opening (drag a folder onto the app / right-click "Open With") through `application(_:open:)` on an `NSApplicationDelegateAdaptor` — this requires declaring `public.folder` handling in `Info.plist` separately from the existing `.md` UTI declarations, since Finder won't offer "Open With" for a folder otherwise.
    - New workspace window type (a second scene alongside the existing `DocumentGroup`, e.g. `WindowGroup`) with a sidebar showing the full recursive file tree of the opened folder, plus the existing `SplitView` editor/preview for whichever file is active. Sidebar is shown by default when a folder is opened.
    - Sidebar shows every file in the tree, but only `.md` files are active/clickable — all other files render grayed out/disabled and do nothing on click. This gives full folder context without implying non-markdown files are editable here.
    - Single-click on an active (`.md`) sidebar file loads it into that window's editor/preview, replacing whatever was previously shown (no tabs yet — every click just swaps content in place).
    - Opening a `.md` file directly from Finder is unchanged: existing `DocumentGroup` single-file window, no sidebar.
    - Verify: open a folder, sidebar appears by default with the full tree, non-`.md` files are visibly disabled and inert, single-click swaps `.md` files in place; double-clicking a `.md` file directly in Finder still opens the old plain editor window with no sidebar.
-6. [ ] **M6 — Native tabs + preview/permanent tab promotion.**
+6. [x] **M6 — Native tabs + preview/permanent tab promotion.**
    - Double-click an active sidebar file opens it in a new native macOS window tab (`NSWindow.addTabbedWindow`) within the same folder's tab group; every tab in the group shows the same sidebar.
    - Track one "preview" tab per tab group: single-click always reuses/replaces that tab's content (bringing it to front); double-click, or editing the preview tab's content, promotes it to a permanent tab, and the next single-click gets a fresh preview tab.
    - Verify: single-click browsing never spawns tabs; double-click or typing pins the file as a permanent tab; pinned tabs survive further single-click browsing elsewhere in the sidebar.
