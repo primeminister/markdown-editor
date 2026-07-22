@@ -92,7 +92,7 @@ final class WorkspaceTabGroup {
         let token = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self, weak tab] _ in
-            MainActor.assumeIsolated {
+            Task { @MainActor in
                 guard let self, let tab else { return }
                 self.closeTab(tab)
             }
