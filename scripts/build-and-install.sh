@@ -22,6 +22,7 @@ if [ ! -d "$APP_PATH" ]; then
 fi
 
 echo "Installing to $DEST_DIR/$SCHEME.app..."
+mkdir -p "$DEST_DIR"
 rm -rf "$DEST_DIR/$SCHEME.app"
 cp -R "$APP_PATH" "$DEST_DIR/"
 
