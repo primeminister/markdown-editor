@@ -13,11 +13,16 @@ import SwiftUI
 final class WorkspaceSplitViewController: NSSplitViewController {
     init(model: WorkspaceModel) {
         let sidebarHostingController = NSHostingController(rootView: WorkspaceSidebarView(model: model))
+        // Without this, NSHostingController derives the window's size (and resize limits) from the
+        // hosted SwiftUI content's ideal/max size -- for the sidebar that's the List's intrinsic
+        // size based on row count, capping the whole window to a size tied to the number of files.
+        sidebarHostingController.sizingOptions = []
         let sidebarItem = NSSplitViewItem(sidebarWithViewController: sidebarHostingController)
         sidebarItem.minimumThickness = 180
         sidebarItem.canCollapse = false
 
         let detailHostingController = NSHostingController(rootView: WorkspaceDetailView(model: model))
+        detailHostingController.sizingOptions = []
         let detailItem = NSSplitViewItem(viewController: detailHostingController)
         detailItem.minimumThickness = 400
 
