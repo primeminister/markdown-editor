@@ -6,6 +6,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 final class WorkspaceWindowManager {
     static let shared = WorkspaceWindowManager()
     private var tabGroups: [URL: WorkspaceTabGroup] = [:]
