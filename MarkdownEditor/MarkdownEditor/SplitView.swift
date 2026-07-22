@@ -18,7 +18,15 @@ struct SplitView: NSViewControllerRepresentable {
     }
 
     func updateNSViewController(_ controller: MainSplitViewController, context: Context) {
-        controller.update(text: $text, isPreviewVisible: isPreviewVisible)
+        // SwiftUI invokes this synchronously as part of laying out *this* representable's own
+        // containing hosting view. `controller.update` reassigns rootView on two separately-owned
+        // NSHostingControllers (editor/preview), which forces their internal SwiftUI layout to run
+        // immediately -- i.e. a nested hosting-view layout inside an in-progress outer one. AppKit
+        // detects that as reentrant layout and silently skips a pass, which shows up as a quick
+        // up/down flash. Deferring one run-loop tick lets the outer layout pass finish first.
+        DispatchQueue.main.async {
+            controller.update(text: $text, isPreviewVisible: isPreviewVisible)
+        }
     }
 }
 

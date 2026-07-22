@@ -57,20 +57,62 @@ enum MarkdownHighlighter {
     private static let boldFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
     private static let italicFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .italicFontMask)
 
-    /// Applies syntax-highlighting attributes to a live text storage. Full-document rescan per edit;
-    /// personal note files are small enough that this is sub-millisecond.
-    static func applyHighlighting(to textStorage: NSTextStorage) {
+    /// Applies syntax-highlighting attributes to a live text storage.
+    ///
+    /// - Parameter editedRange: the range that just changed, if this is an incremental edit (as
+    ///   opposed to the initial highlight of a freshly-loaded document). Token *matching* still
+    ///   scans the full text either way — regex matching alone is cheap and has no layout impact.
+    ///   What's expensive is *writing* attributes: resetting them across the whole document forces
+    ///   `NSLayoutManager` to redo glyph/line-fragment layout for the whole document on every
+    ///   keystroke, which on a realistically-sized file (some thousands of characters, e.g.
+    ///   `docs/plan.md`) is slow enough to race visibly with NSTextView's scroll-to-cursor logic —
+    ///   the scroll position briefly lands in the wrong place before snapping back, seen as a quick
+    ///   up/down jump. So attribute writes are scoped to just the edited paragraph(s), unless the
+    ///   edit touches a fenced code block — a fence boundary can change how much of the *rest* of
+    ///   the document reads as code, so that case still needs a full rescan to stay correct.
+    static func applyHighlighting(to textStorage: NSTextStorage, editedRange: NSRange? = nil) {
         let fullRange = NSRange(location: 0, length: textStorage.length)
+        let tokens = matches(in: textStorage.string)
+
+        let updateRange = editedRange.flatMap { scopedRange(for: $0, in: textStorage.string, tokens: tokens) } ?? fullRange
 
         textStorage.beginEditing()
         textStorage.setAttributes(
             [.font: baseFont, .foregroundColor: NSColor.textColor],
-            range: fullRange
+            range: updateRange
         )
-        for token in matches(in: textStorage.string) {
+        for token in tokens where NSIntersectionRange(token.range, updateRange).length == token.range.length {
             textStorage.addAttributes(attributes(for: token.type), range: token.range)
         }
         textStorage.endEditing()
+    }
+
+    /// Narrows a full-document rescan down to just the edited paragraph(s), as long as doing so
+    /// can't produce a different result than a full rescan would. That holds for every token type
+    /// except `.fencedCode`, since fenced code is the only multi-line construct (its regex spans
+    /// newlines) — every other rule matches within a single line, so it can't be affected by, or
+    /// affect, anything outside the edited paragraph. Returns `nil` (meaning "fall back to a full
+    /// rescan") whenever the edit's paragraph range overlaps or borders an existing fenced-code
+    /// range, since adding/removing a fence marker can change how much of the document after it
+    /// reads as code.
+    static func scopedRange(for editedRange: NSRange, in text: String, tokens: [MarkdownToken]) -> NSRange? {
+        let nsText = text as NSString
+        // NSIntersectionRange, not clamping: a zero-length editedRange sitting exactly at the end
+        // of the document (e.g. deleting the last character) doesn't "intersect" fullRange by that
+        // function's definition and collapses to {0, 0} — silently redirecting to paragraph zero
+        // instead of the paragraph actually being edited. Clamp location/length individually instead.
+        let clampedLocation = min(editedRange.location, nsText.length)
+        let clampedLength = min(editedRange.length, nsText.length - clampedLocation)
+        let clampedEditedRange = NSRange(location: clampedLocation, length: clampedLength)
+        let paragraphRange = nsText.paragraphRange(for: clampedEditedRange)
+
+        let touchesFence = tokens.contains { token in
+            guard token.type == .fencedCode else { return false }
+            return NSMaxRange(token.range) >= paragraphRange.location && token.range.location <= NSMaxRange(paragraphRange)
+        }
+        guard !touchesFence else { return nil }
+
+        return paragraphRange
     }
 
     private static func attributes(for type: MarkdownTokenType) -> [NSAttributedString.Key: Any] {
