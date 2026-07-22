@@ -46,7 +46,7 @@ This is a solo/personal project (`primeminister/markdown-editor` on GitHub, defa
 - **Testing has two layers — see `docs/plan.md`'s "Testing strategy" section:**
   - *Automated* (Swift Testing, `MarkdownEditorTests` target): unit tests for pure logic only (`MarkdownDocument` round-trip, `MarkdownHighlighter` token matching, `MarkdownRenderer` HTML output, small pure helpers). Add these as part of the milestone that introduces the logic, not as a separate follow-up PR.
   - *Manual* (per milestone, owner's Mac): anything involving real AppKit/WKWebView behavior or typing feel. After a milestone's automated tests and code review pass, build and launch the app (`xcodebuild build` then `open`) and hand the owner the milestone's "Verify:" checklist from `docs/plan.md`. **Wait for the owner's go-ahead on the manual checklist before merging** — automated tests passing is not sufficient on its own for milestone PRs.
-- **Merge the PR yourself** (`gh pr merge`) once: code review is clean, automated tests (local + CI) pass, and — for milestone PRs — the owner has confirmed the manual checklist. Still surface anything unusual before merging rather than merging silently.
+- **Never merge the PR.** Once the PR is opened (code review clean, automated tests passing, and — for milestone PRs — the owner has confirmed the manual checklist), stop there. The owner merges every PR themselves, manually. Do not run `gh pr merge` under any circumstances, even if asked to "finish up" or "wrap up" the PR — surface that it's ready and wait.
 - PR descriptions should reference the milestone/plan section they implement, list what automated tests were added, and list the manual "Verify:" bullets to be checked.
 
 ## Subagents/forks must never touch git or GitHub state
