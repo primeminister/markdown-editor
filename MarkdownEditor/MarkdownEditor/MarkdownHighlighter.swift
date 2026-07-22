@@ -95,7 +95,7 @@ enum MarkdownHighlighter {
     /// rescan") whenever the edit's paragraph range overlaps or borders an existing fenced-code
     /// range, since adding/removing a fence marker can change how much of the document after it
     /// reads as code.
-    private static func scopedRange(for editedRange: NSRange, in text: String, tokens: [MarkdownToken]) -> NSRange? {
+    static func scopedRange(for editedRange: NSRange, in text: String, tokens: [MarkdownToken]) -> NSRange? {
         let nsText = text as NSString
         // NSIntersectionRange, not clamping: a zero-length editedRange sitting exactly at the end
         // of the document (e.g. deleting the last character) doesn't "intersect" fullRange by that

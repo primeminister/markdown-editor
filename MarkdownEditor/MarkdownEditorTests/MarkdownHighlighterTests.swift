@@ -68,6 +68,63 @@ struct MarkdownHighlighterTests {
         #expect(tokens.map(\.range) == [nsRange(of: "> Quoted line", in: text)])
     }
 
+    // MARK: - scopedRange
+
+    @Test func scopedRangeReturnsParagraphRangeForEditAwayFromFence() {
+        let text = "First paragraph\n\nSecond paragraph\n\nThird paragraph"
+        let tokens = MarkdownHighlighter.matches(in: text)
+        let editRange = nsRange(of: "Second paragraph", in: text)
+
+        let result = MarkdownHighlighter.scopedRange(for: editRange, in: text, tokens: tokens)
+
+        #expect(result == (text as NSString).paragraphRange(for: editRange))
+    }
+
+    @Test func scopedRangeReturnsNilWhenEditIsInsideFencedCode() {
+        let text = "Preamble\n```\ncode line\n```\nEpilogue"
+        let tokens = MarkdownHighlighter.matches(in: text)
+        let editRange = nsRange(of: "code line", in: text)
+
+        let result = MarkdownHighlighter.scopedRange(for: editRange, in: text, tokens: tokens)
+
+        #expect(result == nil)
+    }
+
+    @Test func scopedRangeReturnsNilWhenEditParagraphBordersFencedCode() {
+        let text = "Preamble\n```\ncode line\n```\nEpilogue"
+        let tokens = MarkdownHighlighter.matches(in: text)
+        // "Preamble\n" paragraph ends where the opening fence begins
+        let editRange = nsRange(of: "Preamble", in: text)
+
+        let result = MarkdownHighlighter.scopedRange(for: editRange, in: text, tokens: tokens)
+
+        #expect(result == nil)
+    }
+
+    @Test func scopedRangeCoversAllParagraphsSpannedByMultiParagraphEdit() {
+        let text = "Line one\nLine two\nLine three"
+        let tokens = MarkdownHighlighter.matches(in: text)
+        let editRange = NSUnionRange(nsRange(of: "Line one", in: text), nsRange(of: "Line two", in: text))
+
+        let result = MarkdownHighlighter.scopedRange(for: editRange, in: text, tokens: tokens)
+
+        #expect(result == (text as NSString).paragraphRange(for: editRange))
+    }
+
+    @Test func scopedRangeHandlesEditAtEndOfDocument() {
+        let text = "First paragraph\nLast paragraph"
+        let tokens: [MarkdownToken] = []
+        let editRange = NSRange(location: (text as NSString).length, length: 0)
+
+        let result = MarkdownHighlighter.scopedRange(for: editRange, in: text, tokens: tokens)
+
+        // Should return the last paragraph, not nil or paragraph zero
+        let lastParaRange = (text as NSString).paragraphRange(
+            for: NSRange(location: (text as NSString).length - 1, length: 0)
+        )
+        #expect(result == lastParaRange)
+    }
+
     @Test func matchesFindsAllSevenTokenTypesInOneDocument() {
         let text = """
         # Heading
