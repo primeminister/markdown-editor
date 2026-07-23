@@ -8,12 +8,23 @@
 import AppKit
 import SwiftUI
 
+enum EditorFontSize {
+    static let min = 9.0
+    static let max = 28.0
+    static let step = 1.0
+    static let `default` = Double(NSFont.systemFontSize)
+    static func clamped(_ value: Double) -> Double { Swift.min(max, Swift.max(min, value)) }
+}
+
 struct EditorView: NSViewRepresentable {
     @Binding var text: String
+    @AppStorage("editorFontSize") private var editorFontSize = EditorFontSize.default
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text)
     }
+
+    private var fontSize: CGFloat { CGFloat(EditorFontSize.clamped(editorFontSize)) }
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
@@ -22,6 +33,7 @@ struct EditorView: NSViewRepresentable {
         textView.string = text
         textView.delegate = context.coordinator
         textView.textStorage?.delegate = context.coordinator
+        context.coordinator.textView = textView
         textView.isRichText = false
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
@@ -30,7 +42,7 @@ struct EditorView: NSViewRepresentable {
         textView.isAutomaticTextCompletionEnabled = false
         textView.isContinuousSpellCheckingEnabled = true
         textView.isGrammarCheckingEnabled = true
-        textView.font = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+        textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         textView.allowsUndo = true
         textView.textContainerInset = NSSize(width: 8, height: 8)
 
@@ -44,6 +56,14 @@ struct EditorView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         context.coordinator.text = $text
+        if textView.font?.pointSize != fontSize {
+            textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+            // A size change alone doesn't retroactively resize already-highlighted text, since each
+            // run's font is a per-character attribute set by MarkdownHighlighter, not derived from
+            // `textView.font` -- re-highlight now so the size change is visible immediately rather
+            // than only on the next edit.
+            highlight(textView)
+        }
         // Only external changes (new document loaded, undo from outside the view) reach here —
         // the Coordinator already pushed our own keystrokes into `text`, so skip re-setting
         // identical content to avoid clobbering the live cursor/selection on every keystroke.
@@ -67,11 +87,15 @@ struct EditorView: NSViewRepresentable {
 
     private func highlight(_ textView: NSTextView) {
         guard let textStorage = textView.textStorage else { return }
-        MarkdownHighlighter.applyHighlighting(to: textStorage)
+        MarkdownHighlighter.applyHighlighting(to: textStorage, fontSize: fontSize)
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate, NSTextStorageDelegate {
         var text: Binding<String>
+        // Set right after creation in `makeNSView` -- lets `didProcessEditing` below read the
+        // textView's current font size (kept in sync with `editorFontSize` by `updateNSView`)
+        // without the Coordinator needing its own `@AppStorage` observer.
+        weak var textView: NSTextView?
         // Set in shouldChangeTextIn (pre-edit) when the affected line contains a fence marker so
         // that the subsequent didProcessEditing forces a full rescan rather than a paragraph-only
         // update. This prevents stale fenced-code attributes from lingering outside the edited
@@ -106,7 +130,8 @@ struct EditorView: NSViewRepresentable {
             guard editedMask.contains(.editedCharacters) else { return }
             let range: NSRange? = needsFullRescan ? nil : editedRange
             needsFullRescan = false
-            MarkdownHighlighter.applyHighlighting(to: textStorage, editedRange: range)
+            let fontSize = textView?.font?.pointSize ?? CGFloat(EditorFontSize.default)
+            MarkdownHighlighter.applyHighlighting(to: textStorage, editedRange: range, fontSize: fontSize)
         }
     }
 }

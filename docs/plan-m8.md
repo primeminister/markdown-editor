@@ -24,9 +24,20 @@ everywhere for free. Sidebar visibility only exists on workspace windows
 (`WorkspaceWindowController.isSidebarVisible`/`toggleSidebar()`), so its shortcut has to reach into
 `WorkspaceWindowManager` and be a harmless no-op when the key window is a single-file window.
 
-The app is **not** sandboxed — no `.entitlements` file, no sandbox keys in the `.pbxproj`. Folder
-and file paths can be persisted as plain strings for session restore; no security-scoped bookmarks
-needed.
+**Correction, found during manual verification of this milestone:** the paragraph above was wrong —
+the app *is* App-Sandboxed (`ENABLE_APP_SANDBOX = YES` in `project.pbxproj`'s build settings, present
+since the M1 commit, with only `com.apple.security.files.user-selected.read-write`). That entitlement
+only grants read access to a folder for the lifetime of the process that had it selected via
+`NSOpenPanel` — it does **not** survive a relaunch. Persisting plain path strings and reading them
+back in a new process after relaunch fails silently with `NSCocoaErrorDomain 257` /
+`POSIXErrorDomain 1` ("Operation not permitted"), because `WorkspaceTab.selectFile`'s catch block
+builds an `NSAlert` but never calls `.runModal()` on it. The actual implementation stores a
+security-scoped bookmark (`URL.bookmarkData(options: .withSecurityScope)`) for each restored
+folder in `RestorableWorkspace.folderBookmark`, resolves it and calls
+`startAccessingSecurityScopedResource()` on launch before reading any files, and holds that access
+open for the window's lifetime via `WorkspaceWindowController.retainSecurityScopedAccess(for:)`
+(released on window close). One bookmark per folder is sufficient — the granted access covers the
+whole folder subtree, so individual tab file paths don't need their own bookmarks.
 
 ## Approach
 

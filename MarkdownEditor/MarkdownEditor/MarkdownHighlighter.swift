@@ -53,9 +53,23 @@ enum MarkdownHighlighter {
         return tokens
     }
 
-    private static let baseFont = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-    private static let boldFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
-    private static let italicFont = NSFontManager.shared.convert(baseFont, toHaveTrait: .italicFontMask)
+    // Bold/italic derive from the base font via NSFontManager, which isn't free -- cached and only
+    // recomputed when the requested size actually differs from the last call, since this runs on
+    // every keystroke (paragraph-scoped) as well as every full-document rescan.
+    private static var cachedFontSize = CGFloat(NSFont.systemFontSize)
+    private static var cachedBaseFont = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+    private static var cachedBoldFont = NSFontManager.shared.convert(cachedBaseFont, toHaveTrait: .boldFontMask)
+    private static var cachedItalicFont = NSFontManager.shared.convert(cachedBaseFont, toHaveTrait: .italicFontMask)
+
+    private static func fonts(for fontSize: CGFloat) -> (base: NSFont, bold: NSFont, italic: NSFont) {
+        guard fontSize != cachedFontSize else { return (cachedBaseFont, cachedBoldFont, cachedItalicFont) }
+        let base = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        cachedFontSize = fontSize
+        cachedBaseFont = base
+        cachedBoldFont = NSFontManager.shared.convert(base, toHaveTrait: .boldFontMask)
+        cachedItalicFont = NSFontManager.shared.convert(base, toHaveTrait: .italicFontMask)
+        return (cachedBaseFont, cachedBoldFont, cachedItalicFont)
+    }
 
     /// Applies syntax-highlighting attributes to a live text storage.
     ///
@@ -70,9 +84,12 @@ enum MarkdownHighlighter {
     ///   up/down jump. So attribute writes are scoped to just the edited paragraph(s), unless the
     ///   edit touches a fenced code block — a fence boundary can change how much of the *rest* of
     ///   the document reads as code, so that case still needs a full rescan to stay correct.
-    static func applyHighlighting(to textStorage: NSTextStorage, editedRange: NSRange? = nil) {
+    /// - Parameter fontSize: the editor's current font size (`EditorFontSize`), applied to every
+    ///   token's font attribute so syntax highlighting doesn't fight the user's chosen size.
+    static func applyHighlighting(to textStorage: NSTextStorage, editedRange: NSRange? = nil, fontSize: CGFloat = CGFloat(NSFont.systemFontSize)) {
         let fullRange = NSRange(location: 0, length: textStorage.length)
         let tokens = matches(in: textStorage.string)
+        let (baseFont, boldFont, italicFont) = fonts(for: fontSize)
 
         let updateRange = editedRange.flatMap { scopedRange(for: $0, in: textStorage.string, tokens: tokens) } ?? fullRange
 
@@ -82,7 +99,7 @@ enum MarkdownHighlighter {
             range: updateRange
         )
         for token in tokens where NSIntersectionRange(token.range, updateRange).length == token.range.length {
-            textStorage.addAttributes(attributes(for: token.type), range: token.range)
+            textStorage.addAttributes(attributes(for: token.type, boldFont: boldFont, italicFont: italicFont), range: token.range)
         }
         textStorage.endEditing()
     }
@@ -115,7 +132,7 @@ enum MarkdownHighlighter {
         return paragraphRange
     }
 
-    private static func attributes(for type: MarkdownTokenType) -> [NSAttributedString.Key: Any] {
+    private static func attributes(for type: MarkdownTokenType, boldFont: NSFont, italicFont: NSFont) -> [NSAttributedString.Key: Any] {
         switch type {
         case .header:
             return [.foregroundColor: NSColor.systemBlue, .font: boldFont]

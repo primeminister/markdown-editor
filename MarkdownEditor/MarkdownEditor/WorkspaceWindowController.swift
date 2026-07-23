@@ -22,6 +22,10 @@ final class WorkspaceWindowController {
     private weak var previewTab: WorkspaceTab?
     private var splitViewController: WorkspaceSplitViewController!
     private var closeObserver: NSObjectProtocol?
+    /// Set only when this window's folder was opened via a resolved security-scoped bookmark
+    /// (session restore) rather than a fresh `NSOpenPanel` selection -- the sandbox access grant
+    /// from resolving that bookmark must be released exactly once, when the window closes.
+    private var securityScopedFolderURL: URL?
 
     /// Called once the window closes, so `WorkspaceWindowManager` can drop this controller.
     var onEmpty: (() -> Void)?
@@ -55,6 +59,7 @@ final class WorkspaceWindowController {
                 if let token = self.closeObserver {
                     NotificationCenter.default.removeObserver(token)
                 }
+                self.securityScopedFolderURL?.stopAccessingSecurityScopedResource()
                 self.onEmpty?()
             }
         }
@@ -137,6 +142,37 @@ final class WorkspaceWindowController {
     /// Folder reopened (menu/Finder) while its window is already open -- just bring it forward.
     func bringToFront() {
         window.makeKeyAndOrderFront(nil)
+    }
+
+    /// Session restore only: `url` is the security-scoped URL resolved from a persisted bookmark,
+    /// already `startAccessingSecurityScopedResource()`-ed by the caller. Ownership of ending that
+    /// access transfers to this controller, released when the window closes.
+    func retainSecurityScopedAccess(for url: URL) {
+        securityScopedFolderURL = url
+    }
+
+    /// Session restore on launch. Callers must have already granted sandbox access to this
+    /// window's folder (`retainSecurityScopedAccess(for:)`) before calling this -- every
+    /// `tab.selectFile` read below happens under that folder-level security scope, which also
+    /// covers everything in its subtree, so no per-file bookmark is needed. One permanent tab per
+    /// surviving file path (none becomes
+    /// `previewTab`, matching the "freshly opened folder" behavior -- the first sidebar single-click
+    /// after relaunch mints its own preview tab rather than reusing a restored one). Files that no
+    /// longer exist (or were replaced by a directory of the same name) are silently skipped; if none
+    /// survive, the window still opens in the existing empty state rather than erroring. Window is
+    /// brought forward before `selectFile` runs, matching `openPreview`/`openPermanent`'s ordering --
+    /// `selectFile` can show a blocking alert on a failed read, so the window needs to already be on
+    /// screen when that happens.
+    func restoreTabs(filePaths: [String], activeFilePath: String?) {
+        window.makeKeyAndOrderFront(nil)
+        for path in filePaths {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), !isDirectory.boolValue else { continue }
+            let tab = makeTab()
+            tab.selectFile(URL(fileURLWithPath: path))
+        }
+        activeTab = tabs.first { $0.selectedFileURL?.path == activeFilePath } ?? tabs.first
+        syncWindowTitle()
     }
 
     func flushAllPendingAutosaves() {
