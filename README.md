@@ -20,6 +20,18 @@ Drive, git, whatever) is up to you.
   association (Finder "Open With"), multiple documents open at once.
 - **Persistent layout** — window size/position and the editor/preview split
   position are remembered per document across relaunches.
+- **Open Folder** (`File > Open Folder…`, or drag a folder onto the app) —
+  a workspace window with a full-height sidebar showing the folder's file
+  tree; non-markdown files are visible for context but disabled. Single-click
+  loads a file into the window's editor/preview; double-clicking a file
+  directly in Finder still opens the plain single-file window.
+- **In-window tabs** — single-click browsing reuses one "preview" tab;
+  double-click, or editing that tab's content, promotes it to a permanent
+  tab. The sidebar can be collapsed to an icon-only rail.
+- **Keyboard shortcuts** — ⌘/ toggles the preview pane, ⌘B toggles the
+  sidebar (folder windows), ⌘+/⌘−/⌘0 adjust/reset the editor's font size.
+- **Session restore** — folder windows open at quit (tabs, active tab,
+  sidebar state) are restored on next launch.
 
 ## Requirements
 
