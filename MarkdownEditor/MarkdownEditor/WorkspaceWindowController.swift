@@ -22,6 +22,10 @@ final class WorkspaceWindowController {
     private weak var previewTab: WorkspaceTab?
     private var splitViewController: WorkspaceSplitViewController!
     private var closeObserver: NSObjectProtocol?
+    /// Set only when this window's folder was opened via a resolved security-scoped bookmark
+    /// (session restore) rather than a fresh `NSOpenPanel` selection -- the sandbox access grant
+    /// from resolving that bookmark must be released exactly once, when the window closes.
+    private var securityScopedFolderURL: URL?
 
     /// Called once the window closes, so `WorkspaceWindowManager` can drop this controller.
     var onEmpty: (() -> Void)?
@@ -55,6 +59,7 @@ final class WorkspaceWindowController {
                 if let token = self.closeObserver {
                     NotificationCenter.default.removeObserver(token)
                 }
+                self.securityScopedFolderURL?.stopAccessingSecurityScopedResource()
                 self.onEmpty?()
             }
         }
@@ -139,7 +144,18 @@ final class WorkspaceWindowController {
         window.makeKeyAndOrderFront(nil)
     }
 
-    /// Session restore on launch: one permanent tab per surviving file path (none becomes
+    /// Session restore only: `url` is the security-scoped URL resolved from a persisted bookmark,
+    /// already `startAccessingSecurityScopedResource()`-ed by the caller. Ownership of ending that
+    /// access transfers to this controller, released when the window closes.
+    func retainSecurityScopedAccess(for url: URL) {
+        securityScopedFolderURL = url
+    }
+
+    /// Session restore on launch. Callers must have already granted sandbox access to this
+    /// window's folder (`retainSecurityScopedAccess(for:)`) before calling this -- every
+    /// `tab.selectFile` read below happens under that folder-level security scope, which also
+    /// covers everything in its subtree, so no per-file bookmark is needed. One permanent tab per
+    /// surviving file path (none becomes
     /// `previewTab`, matching the "freshly opened folder" behavior -- the first sidebar single-click
     /// after relaunch mints its own preview tab rather than reusing a restored one). Files that no
     /// longer exist (or were replaced by a directory of the same name) are silently skipped; if none

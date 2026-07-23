@@ -22,9 +22,12 @@ struct EditorFontSizeTests {
 }
 
 struct RestorableWorkspaceTests {
+    private static let fakeBookmark = Data([0x01, 0x02, 0x03])
+
     @Test func encodeDecodeRoundTrips() throws {
         let original = RestorableWorkspace(
             folderPath: "/Users/test/Documents/notes",
+            folderBookmark: Self.fakeBookmark,
             tabFilePaths: ["/Users/test/Documents/notes/a.md", "/Users/test/Documents/notes/b.md"],
             activeTabFilePath: "/Users/test/Documents/notes/b.md"
         )
@@ -33,12 +36,18 @@ struct RestorableWorkspaceTests {
         let decoded = try JSONDecoder().decode(RestorableWorkspace.self, from: data)
 
         #expect(decoded.folderPath == original.folderPath)
+        #expect(decoded.folderBookmark == original.folderBookmark)
         #expect(decoded.tabFilePaths == original.tabFilePaths)
         #expect(decoded.activeTabFilePath == original.activeTabFilePath)
     }
 
     @Test func encodeDecodeRoundTripsNilActiveTabFilePath() throws {
-        let original = RestorableWorkspace(folderPath: "/Users/test/Documents/notes", tabFilePaths: [], activeTabFilePath: nil)
+        let original = RestorableWorkspace(
+            folderPath: "/Users/test/Documents/notes",
+            folderBookmark: Self.fakeBookmark,
+            tabFilePaths: [],
+            activeTabFilePath: nil
+        )
 
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(RestorableWorkspace.self, from: data)
@@ -48,8 +57,8 @@ struct RestorableWorkspaceTests {
 
     @Test func arrayOfWorkspacesRoundTrips() throws {
         let original = [
-            RestorableWorkspace(folderPath: "/a", tabFilePaths: ["/a/1.md"], activeTabFilePath: "/a/1.md"),
-            RestorableWorkspace(folderPath: "/b", tabFilePaths: [], activeTabFilePath: nil),
+            RestorableWorkspace(folderPath: "/a", folderBookmark: Self.fakeBookmark, tabFilePaths: ["/a/1.md"], activeTabFilePath: "/a/1.md"),
+            RestorableWorkspace(folderPath: "/b", folderBookmark: Self.fakeBookmark, tabFilePaths: [], activeTabFilePath: nil),
         ]
 
         let data = try JSONEncoder().encode(original)
