@@ -23,7 +23,7 @@ A standard SwiftUI document-based app (`DocumentGroup`/`FileDocument`), using Ap
    - Organization Identifier: `nl.mowd` → bundle id `nl.mowd.MarkdownEditor`
    - Interface: SwiftUI, Language: Swift, **check "Include Tests"** (Testing System: Swift Testing) — scaffolds a `MarkdownEditorTests` target
    - Location: this repo folder; uncheck "Create Git repository" (one already exists)
-   - Deployment target: macOS 14.0 (bump higher if both Macs are confirmed newer)
+   - Deployment target: macOS 15.0
 3. `File > Add Package Dependencies…` → `https://github.com/swiftlang/swift-markdown.git` → Up to Next Major Version from `0.8.0` → add `Markdown` library to the target.
 
 Once the project exists, verify the source folder shows as a plain (non-yellow) group in the Project Navigator — modern Xcode uses file-system-synchronized groups, so `.swift` files dropped on disk are auto-added to the target with no further GUI steps.
