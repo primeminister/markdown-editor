@@ -11,7 +11,7 @@ import SwiftUI
 /// there's nowhere for edits to be saved.
 struct CheatsheetView: View {
     @State private var text = Self.loadCheatsheet()
-    @State private var isPreviewVisible = true
+    @AppStorage("isPreviewVisible") private var isPreviewVisible: Bool = true
 
     var body: some View {
         SplitView(text: $text, isPreviewVisible: $isPreviewVisible, autosaveIdentifier: "cheatsheet", isEditorEditable: false)
