@@ -18,6 +18,7 @@ enum EditorFontSize {
 
 struct EditorView: NSViewRepresentable {
     @Binding var text: String
+    var isEditable: Bool = true
     @AppStorage("editorFontSize") private var editorFontSize = EditorFontSize.default
 
     func makeCoordinator() -> Coordinator {
@@ -35,6 +36,7 @@ struct EditorView: NSViewRepresentable {
         textView.textStorage?.delegate = context.coordinator
         context.coordinator.textView = textView
         textView.isRichText = false
+        textView.isEditable = isEditable
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -56,6 +58,7 @@ struct EditorView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         context.coordinator.text = $text
+        textView.isEditable = isEditable
         if textView.font?.pointSize != fontSize {
             textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
             // A size change alone doesn't retroactively resize already-highlighted text, since each

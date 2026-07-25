@@ -12,6 +12,7 @@ struct MarkdownEditorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage("isPreviewVisible") private var isPreviewVisible = true
     @AppStorage("editorFontSize") private var editorFontSize = EditorFontSize.default
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
         DocumentGroup(newDocument: MarkdownDocument()) { file in
@@ -52,6 +53,20 @@ struct MarkdownEditorApp: App {
                 }
                 .keyboardShortcut("0", modifiers: .command)
             }
+            CommandGroup(after: .help) {
+                Button("Markdown Syntax") {
+                    openWindow(id: "cheatsheet")
+                }
+            }
         }
+
+        // `.defaultLaunchBehavior(.suppressed)` keeps this from auto-opening on every launch --
+        // SwiftUI otherwise presents every Scene in `body` at launch by default, alongside the
+        // primary DocumentGroup.
+        Window("Markdown Syntax", id: "cheatsheet") {
+            CheatsheetView()
+        }
+        .defaultLaunchBehavior(.suppressed)
+        .defaultSize(width: 720, height: 560)
     }
 }
