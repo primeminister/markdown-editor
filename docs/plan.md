@@ -115,7 +115,7 @@ Status: [x] Done
    - Verify: one window per folder with no OS-level tab bar; single-click/double-click/edit-promotion behavior matches M6; closing the last tab leaves the window/sidebar open in the empty state; sidebar toggle animates between full width and icon-only rail and persists across relaunch.
 
 #### Milestone 8
-Status: [ ] Not started
+Status: [x] Done
 
 **M8 — App preferences: keyboard shortcuts, editor font size, session restore.** Full design in `docs/plan-m8.md`.
    - Menu commands (fixed shortcuts, no Settings window): ⌘/ toggles preview (works in both window types via the existing shared `isPreviewVisible` `@AppStorage`), ⌘B toggles the sidebar in folder windows (no-op in single-file windows), ⌘+/⌘−/⌘0 adjust/reset the editor's font size.
@@ -126,5 +126,4 @@ Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj 
 
 
 ## Next features to implement:
-1. When clicking help we have an extra menu that displays the contents of https://www.markdownguide.org/cheat-sheet/ for Markdown cheatsheet
-2. Scrolling preview where the cursor is in the editor.
+1. Scrolling preview where the cursor is in the editor.
