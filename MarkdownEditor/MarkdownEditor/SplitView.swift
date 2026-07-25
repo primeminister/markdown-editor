@@ -12,9 +12,10 @@ struct SplitView: NSViewControllerRepresentable {
     @Binding var text: String
     @Binding var isPreviewVisible: Bool
     let autosaveIdentifier: String
+    var isEditorEditable: Bool = true
 
     func makeNSViewController(context: Context) -> MainSplitViewController {
-        MainSplitViewController(text: $text, isPreviewVisible: isPreviewVisible, autosaveIdentifier: autosaveIdentifier)
+        MainSplitViewController(text: $text, isPreviewVisible: isPreviewVisible, autosaveIdentifier: autosaveIdentifier, isEditorEditable: isEditorEditable)
     }
 
     func updateNSViewController(_ controller: MainSplitViewController, context: Context) {
@@ -44,12 +45,14 @@ final class MainSplitViewController: NSSplitViewController {
     private let editorHostingController: NSHostingController<AnyView>
     private let previewHostingController: NSHostingController<AnyView>
     private let autosaveIdentifier: String
+    private let isEditorEditable: Bool
     private var hasSetWindowAutosaveName = false
 
-    init(text: Binding<String>, isPreviewVisible: Bool, autosaveIdentifier: String) {
+    init(text: Binding<String>, isPreviewVisible: Bool, autosaveIdentifier: String, isEditorEditable: Bool = true) {
         self.autosaveIdentifier = autosaveIdentifier
+        self.isEditorEditable = isEditorEditable
 
-        let editorHostingController = NSHostingController(rootView: AnyView(EditorView(text: text)))
+        let editorHostingController = NSHostingController(rootView: AnyView(EditorView(text: text, isEditable: isEditorEditable)))
         self.editorHostingController = editorHostingController
         let editorItem = NSSplitViewItem(viewController: editorHostingController)
         editorItem.minimumThickness = 300
@@ -98,7 +101,7 @@ final class MainSplitViewController: NSSplitViewController {
         // SwiftUI never re-diffs a NSHostingController's rootView on its own once handed to
         // AppKit — without reassigning it here on every update, EditorView/PreviewView would
         // freeze after the first render and never see subsequent text or state changes.
-        editorHostingController.rootView = AnyView(EditorView(text: text))
+        editorHostingController.rootView = AnyView(EditorView(text: text, isEditable: isEditorEditable))
         previewHostingController.rootView = AnyView(PreviewView(text: text))
         setPreviewVisible(isPreviewVisible)
     }
