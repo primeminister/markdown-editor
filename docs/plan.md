@@ -123,7 +123,7 @@ Status: [x] Done
    - Verify: all five shortcuts work as described in both window types; font size persists and clamps at its bounds; quitting with multiple folder windows (varying tabs/active tab/sidebar state) and relaunching restores them faithfully, gracefully skipping any folder/file deleted since; quitting with no folder windows open still shows the normal blank document window on relaunch.
 
 #### Milestone 9
-Status: [ ] Not started
+Status: [x] Done
 
 **M9 — Preview scrolls to follow the editor cursor.** Full design in `docs/plan-m9.md`.
    - Rendered HTML blocks carry `data-source-line` attributes from `swift-markdown`'s parse ranges; the editor tracks its cursor's line and the preview scrolls the matching block to vertical center — smoothly on cursor movement, instantly when resyncing after a debounced re-render (which also fixes re-renders currently resetting scroll to the top).
