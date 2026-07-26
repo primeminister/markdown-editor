@@ -40,7 +40,7 @@ struct PreviewView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.lastKnownCursorLine = cursorLine
         context.coordinator.lastKnownText = text
-        context.coordinator.render(text, in: webView)
+        context.coordinator.loadInitialDocument(text, in: webView)
         return webView
     }
 
@@ -69,11 +69,30 @@ struct PreviewView: NSViewRepresentable {
         /// re-render's reload finishes (see `webView(_:didFinish:)`).
         fileprivate var lastKnownCursorLine = 1
 
-        func render(_ text: String, in webView: WKWebView) {
-            guard text != lastRenderedText else { return }
+        /// The one real page navigation, done once up front to establish the document shell and
+        /// inline stylesheet. Every later content change goes through `render`'s in-place DOM
+        /// patch instead, since a full reload here means a full re-navigation there too.
+        func loadInitialDocument(_ text: String, in webView: WKWebView) {
             lastRenderedText = text
             let html = MarkdownRenderer.htmlDocument(from: text, stylesheet: PreviewView.stylesheet)
             webView.loadHTMLString(html, baseURL: nil)
+        }
+
+        /// Replaces the rendered body content in place via JS rather than a fresh `loadHTMLString`
+        /// navigation. A full-page reload flashes the preview blank and resets scroll before the
+        /// resync JS can run to fix it back up -- very visible during normal typing, since the
+        /// render debounce interval is on the same order as typing's natural inter-keystroke gaps
+        /// and so fires often. An in-place DOM swap has no navigation, so nothing flashes; scroll
+        /// only needs a resync afterward (below), not a full re-navigation to recover from.
+        func render(_ text: String, in webView: WKWebView) {
+            guard text != lastRenderedText else { return }
+            lastRenderedText = text
+            let fragment = MarkdownRenderer.htmlFragment(from: text)
+            guard let encoded = try? JSONEncoder().encode(fragment), let jsString = String(data: encoded, encoding: .utf8) else { return }
+            webView.evaluateJavaScript("document.body.innerHTML = \(jsString);") { [weak self, weak webView] _, _ in
+                guard let self, let webView else { return }
+                self.scrollToLine(self.lastKnownCursorLine, in: webView, animated: false)
+            }
         }
 
         /// Only reschedules when `text` differs from what's already rendered/pending, so unrelated
@@ -89,17 +108,17 @@ struct PreviewView: NSViewRepresentable {
             DispatchQueue.main.asyncAfter(deadline: .now() + interval, execute: workItem)
         }
 
-        /// Content changes take the existing debounced-render path above — the resulting reload's
-        /// `webView(_:didFinish:)` resyncs scroll position once it lands, since a mid-typing scroll
-        /// would run against a stale DOM. Pure cursor movement with no pending content change (a
-        /// click or arrow key) scrolls directly instead, lightly debounced.
+        /// Content changes take the existing debounced-render path above — `render` resyncs scroll
+        /// position itself once its DOM patch completes, since a mid-typing scroll would run
+        /// against a stale DOM. Pure cursor movement with no pending content change (a click or
+        /// arrow key) scrolls directly instead, lightly debounced.
         func update(text: String, cursorLine: Int, in webView: WKWebView, renderDebounce: TimeInterval, scrollDebounce: TimeInterval) {
             guard text == lastKnownText else {
                 lastKnownText = text
                 lastKnownCursorLine = cursorLine
                 // A scroll queued by an earlier pure cursor move is now stale against the incoming
                 // content change and would otherwise fire independently of this render's own
-                // post-reload resync -- drop it, `webView(_:didFinish:)` will resync once it lands.
+                // post-patch resync -- drop it, `render` will resync once its DOM patch completes.
                 pendingScrollWorkItem?.cancel()
                 scheduleRender(of: text, in: webView, after: renderDebounce)
                 return
@@ -158,9 +177,9 @@ struct PreviewView: NSViewRepresentable {
             decisionHandler(.cancel)
         }
 
-        /// A reload just reset scroll position to the top — resync to wherever the cursor
-        /// currently is, instantly rather than animated (animating from a freshly reloaded blank
-        /// page would just look like a jump-cut).
+        /// Only fires for the one-time initial `loadHTMLString` navigation now (later content
+        /// changes patch the DOM in place via `render`, which resyncs scroll itself once that JS
+        /// call completes) — positions the freshly loaded page at the starting cursor line.
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             scrollToLine(lastKnownCursorLine, in: webView, animated: false)
         }
