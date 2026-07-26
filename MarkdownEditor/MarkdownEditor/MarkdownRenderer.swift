@@ -62,6 +62,14 @@ enum MarkdownRenderer {
             }
         }
 
+        /// `data-source-line` lets the preview locate the rendered block matching a given editor
+        /// cursor line (see `PreviewView.scrollToLine`). Block-level elements only — inline nodes
+        /// (emphasis, links, ...) resolve at their enclosing block's granularity.
+        private func sourceLineAttribute(for markup: Markup) -> String {
+            guard let line = markup.range?.lowerBound.line else { return "" }
+            return " data-source-line=\"\(line)\""
+        }
+
         mutating func visitDocument(_ document: Document) -> String {
             childrenHTML(of: document)
         }
@@ -71,11 +79,11 @@ enum MarkdownRenderer {
         }
 
         mutating func visitParagraph(_ paragraph: Paragraph) -> String {
-            "<p>\(childrenHTML(of: paragraph))</p>\n"
+            "<p\(sourceLineAttribute(for: paragraph))>\(childrenHTML(of: paragraph))</p>\n"
         }
 
         mutating func visitHeading(_ heading: Heading) -> String {
-            "<h\(heading.level)>\(childrenHTML(of: heading))</h\(heading.level)>\n"
+            "<h\(heading.level)\(sourceLineAttribute(for: heading))>\(childrenHTML(of: heading))</h\(heading.level)>\n"
         }
 
         mutating func visitEmphasis(_ emphasis: Emphasis) -> String {
@@ -99,7 +107,7 @@ enum MarkdownRenderer {
             // CommonMark code block content always ends in a newline before the closing fence;
             // trim it so <pre> doesn't render a trailing blank line.
             let code = codeBlock.code.hasSuffix("\n") ? String(codeBlock.code.dropLast()) : codeBlock.code
-            return "<pre><code\(languageClass)>\(escapeHTML(code))</code></pre>\n"
+            return "<pre\(sourceLineAttribute(for: codeBlock))><code\(languageClass)>\(escapeHTML(code))</code></pre>\n"
         }
 
         mutating func visitLink(_ link: Link) -> String {
@@ -124,16 +132,16 @@ enum MarkdownRenderer {
         }
 
         mutating func visitBlockQuote(_ blockQuote: BlockQuote) -> String {
-            "<blockquote>\n\(childrenHTML(of: blockQuote))</blockquote>\n"
+            "<blockquote\(sourceLineAttribute(for: blockQuote))>\n\(childrenHTML(of: blockQuote))</blockquote>\n"
         }
 
         mutating func visitUnorderedList(_ unorderedList: UnorderedList) -> String {
-            "<ul>\n\(childrenHTML(of: unorderedList))</ul>\n"
+            "<ul\(sourceLineAttribute(for: unorderedList))>\n\(childrenHTML(of: unorderedList))</ul>\n"
         }
 
         mutating func visitOrderedList(_ orderedList: OrderedList) -> String {
             let startAttribute = orderedList.startIndex != 1 ? " start=\"\(orderedList.startIndex)\"" : ""
-            return "<ol\(startAttribute)>\n\(childrenHTML(of: orderedList))</ol>\n"
+            return "<ol\(startAttribute)\(sourceLineAttribute(for: orderedList))>\n\(childrenHTML(of: orderedList))</ol>\n"
         }
 
         mutating func visitListItem(_ listItem: ListItem) -> String {
@@ -160,11 +168,11 @@ enum MarkdownRenderer {
                     html += visit(child)
                 }
             }
-            return "<li>\(checkbox)\(content)</li>\n"
+            return "<li\(sourceLineAttribute(for: listItem))>\(checkbox)\(content)</li>\n"
         }
 
         mutating func visitThematicBreak(_ thematicBreak: ThematicBreak) -> String {
-            "<hr>\n"
+            "<hr\(sourceLineAttribute(for: thematicBreak))>\n"
         }
 
         mutating func visitLineBreak(_ lineBreak: LineBreak) -> String {
@@ -180,7 +188,7 @@ enum MarkdownRenderer {
         }
 
         mutating func visitHTMLBlock(_ html: HTMLBlock) -> String {
-            "<p>\(escapeHTML(html.rawHTML))</p>\n"
+            "<p\(sourceLineAttribute(for: html))>\(escapeHTML(html.rawHTML))</p>\n"
         }
 
         mutating func visitTable(_ table: Table) -> String {
@@ -195,7 +203,7 @@ enum MarkdownRenderer {
             let cells = tableHead.cells.enumerated().map { index, cell in
                 "<th\(alignmentAttribute(index))>\(childrenHTML(of: cell))</th>"
             }.joined()
-            return "<thead>\n<tr>\(cells)</tr>\n</thead>\n"
+            return "<thead>\n<tr\(sourceLineAttribute(for: tableHead))>\(cells)</tr>\n</thead>\n"
         }
 
         mutating func visitTableBody(_ tableBody: Table.Body) -> String {
@@ -209,7 +217,7 @@ enum MarkdownRenderer {
             let cells = tableRow.cells.enumerated().map { index, cell in
                 "<td\(alignmentAttribute(index))>\(childrenHTML(of: cell))</td>"
             }.joined()
-            return "<tr>\(cells)</tr>\n"
+            return "<tr\(sourceLineAttribute(for: tableRow))>\(cells)</tr>\n"
         }
 
         private func alignmentAttribute(_ columnIndex: Int) -> String {

@@ -14,13 +14,14 @@ struct ContentView: View {
     // Falls back to a per-window identifier for untitled documents (no fileURL yet) so multiple
     // simultaneously open untitled windows don't share/clobber each other's saved layout.
     @State private var untitledIdentifier = UUID().uuidString
+    @State private var cursorLine = 1
 
     private var autosaveIdentifier: String {
         fileURL?.path ?? untitledIdentifier
     }
 
     var body: some View {
-        SplitView(text: $document.text, isPreviewVisible: $isPreviewVisible, autosaveIdentifier: autosaveIdentifier)
+        SplitView(text: $document.text, isPreviewVisible: $isPreviewVisible, cursorLine: $cursorLine, autosaveIdentifier: autosaveIdentifier)
             .frame(minWidth: 620, minHeight: 400)
             .toolbar {
                 ToolbarItem {
