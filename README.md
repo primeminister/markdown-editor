@@ -14,7 +14,9 @@ Drive, git, whatever) is up to you.
   fenced code blocks, and blockquotes.
 - **Live preview** with support for tables, nested lists, and code fences;
   external links open in your default browser instead of in-pane; follows
-  system light/dark mode.
+  system light/dark mode. The preview scrolls to follow the editor cursor,
+  smoothly centering the corresponding rendered block as you move around the
+  document.
 - **Preview toggle** to hide the preview pane and edit distraction-free.
 - **Native open/save** — standard macOS document handling, `.md` file
   association (Finder "Open With"), multiple documents open at once.
@@ -30,12 +32,16 @@ Drive, git, whatever) is up to you.
   tab. The sidebar can be collapsed to an icon-only rail.
 - **Keyboard shortcuts** — ⌘/ toggles the preview pane, ⌘B toggles the
   sidebar (folder windows), ⌘+/⌘−/⌘0 adjust/reset the editor's font size.
+  Shortcuts are customizable in app preferences.
 - **Session restore** — folder windows open at quit (tabs, active tab,
   sidebar state) are restored on next launch.
+- **Markdown syntax cheatsheet** (`Help` menu) — a read-only editor/preview
+  window showing common Markdown syntax side by side with its rendered
+  output.
 
 ## Requirements
 
-- macOS 14.0 or later
+- macOS 15.6 or later
 - Xcode (full install, not just Command Line Tools) to build
 
 ## Building and running
