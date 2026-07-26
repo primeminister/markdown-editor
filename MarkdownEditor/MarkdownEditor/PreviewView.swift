@@ -68,6 +68,12 @@ struct PreviewView: NSViewRepresentable {
         /// The most recent cursor line seen, used to resync scroll position once a debounced
         /// re-render's reload finishes (see `webView(_:didFinish:)`).
         fileprivate var lastKnownCursorLine = 1
+        /// Set once the initial `loadHTMLString` navigation finishes. `render` no-ops while this is
+        /// false, since evaluating JS against a webview mid-navigation can silently fail -- without
+        /// this guard, a render debounced during that window would mark itself as applied (via
+        /// `lastRenderedText`) without actually patching the DOM, leaving the preview stuck on the
+        /// initial content with no future edit able to retrigger it.
+        private var isInitialLoadComplete = false
 
         /// The one real page navigation, done once up front to establish the document shell and
         /// inline stylesheet. Every later content change goes through `render`'s in-place DOM
@@ -85,6 +91,7 @@ struct PreviewView: NSViewRepresentable {
         /// and so fires often. An in-place DOM swap has no navigation, so nothing flashes; scroll
         /// only needs a resync afterward (below), not a full re-navigation to recover from.
         func render(_ text: String, in webView: WKWebView) {
+            guard isInitialLoadComplete else { return }
             guard text != lastRenderedText else { return }
             lastRenderedText = text
             let fragment = MarkdownRenderer.htmlFragment(from: text)
@@ -180,8 +187,19 @@ struct PreviewView: NSViewRepresentable {
         /// Only fires for the one-time initial `loadHTMLString` navigation now (later content
         /// changes patch the DOM in place via `render`, which resyncs scroll itself once that JS
         /// call completes) — positions the freshly loaded page at the starting cursor line.
+        ///
+        /// A content change can arrive (via `update`) while this navigation is still in flight;
+        /// `render` no-ops those until `isInitialLoadComplete` flips, so `lastKnownText` can be
+        /// ahead of `lastRenderedText` here. Catch up with a real render (which resyncs scroll
+        /// itself) instead of just scrolling the stale initial content.
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            scrollToLine(lastKnownCursorLine, in: webView, animated: false)
+            isInitialLoadComplete = true
+            if let lastKnownText, lastKnownText != lastRenderedText {
+                pendingRenderWorkItem?.cancel()
+                render(lastKnownText, in: webView)
+            } else {
+                scrollToLine(lastKnownCursorLine, in: webView, animated: false)
+            }
         }
     }
 }
