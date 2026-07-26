@@ -201,6 +201,39 @@ struct PreviewView: NSViewRepresentable {
                 scrollToLine(lastKnownCursorLine, in: webView, animated: false)
             }
         }
+
+        /// Resets to a pre-load state and retries `loadInitialDocument` from whatever content is
+        /// currently known. Shared by every failure delegate below (the initial navigation failing
+        /// outright, or the web content process dying after it succeeded) since both leave the page
+        /// without a live DOM to patch, and `isInitialLoadComplete` needs to go back to `false` so
+        /// `render` stops assuming a patch will land.
+        private func recoverFromLoadFailure(in webView: WKWebView) {
+            isInitialLoadComplete = false
+            lastRenderedText = nil
+            pendingRenderWorkItem?.cancel()
+            loadInitialDocument(lastKnownText ?? "", in: webView)
+        }
+
+        /// The initial `loadHTMLString` navigation failing outright (no network is involved loading
+        /// an inlined HTML string, but a WebKit-internal failure is still possible) would otherwise
+        /// leave `isInitialLoadComplete` stuck at `false` forever, with `render` permanently no-oping.
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            guard !isInitialLoadComplete else { return }
+            recoverFromLoadFailure(in: webView)
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            guard !isInitialLoadComplete else { return }
+            recoverFromLoadFailure(in: webView)
+        }
+
+        /// A WebContent process crash mid-session leaves the page blank with no live DOM to patch --
+        /// without this, `render`'s `evaluateJavaScript` calls would keep silently failing while
+        /// `lastRenderedText` kept advancing, so the preview would look "rendered" but never actually
+        /// update again.
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            recoverFromLoadFailure(in: webView)
+        }
     }
 }
 
