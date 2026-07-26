@@ -13,7 +13,7 @@ struct MarkdownRendererTests {
 
     @Test func headingProducesLevelTag() {
         let html = MarkdownRenderer.htmlFragment(from: "## Subtitle")
-        #expect(html.contains("<h2>Subtitle</h2>"))
+        #expect(html.contains("<h2 data-source-line=\"1\">Subtitle</h2>"))
     }
 
     @Test func tableProducesHeadAndBodyWithAlignment() {
@@ -40,12 +40,12 @@ struct MarkdownRendererTests {
         """
         let html = MarkdownRenderer.htmlFragment(from: text)
 
-        let outerUL = html.range(of: "<ul>")
-        let innerUL = html.range(of: "<ul>", range: outerUL.map { $0.upperBound..<html.endIndex })
+        let outerUL = html.range(of: "<ul data-source-line=\"1\">")
+        let innerUL = html.range(of: "<ul data-source-line=\"2\">", range: outerUL.map { $0.upperBound..<html.endIndex })
         #expect(outerUL != nil)
         #expect(innerUL != nil)
-        #expect(html.contains("<li>Outer"))
-        #expect(html.contains("<li>Inner</li>"))
+        #expect(html.contains("<li data-source-line=\"1\">Outer"))
+        #expect(html.contains("<li data-source-line=\"2\">Inner</li>"))
     }
 
     @Test func fencedCodeBlockProducesPreCodeWithLanguageClass() {
@@ -56,7 +56,7 @@ struct MarkdownRendererTests {
         """
         let html = MarkdownRenderer.htmlFragment(from: text)
 
-        #expect(html.contains("<pre><code class=\"language-swift\">let x = 1"))
+        #expect(html.contains("<pre data-source-line=\"1\"><code class=\"language-swift\">let x = 1"))
         #expect(html.contains("</code></pre>"))
     }
 
@@ -91,7 +91,7 @@ struct MarkdownRendererTests {
         let html = MarkdownRenderer.htmlDocument(from: "# Title", stylesheet: "body { color: red; }")
         #expect(html.contains("<style>"))
         #expect(html.contains("body { color: red; }"))
-        #expect(html.contains("<h1>Title</h1>"))
+        #expect(html.contains("<h1 data-source-line=\"1\">Title</h1>"))
     }
 
     @Test func tightListItemDoesNotWrapContentInParagraphTag() {
@@ -110,6 +110,48 @@ struct MarkdownRendererTests {
           Second para.
         """
         let html = MarkdownRenderer.htmlFragment(from: text)
-        #expect(html.contains("<li><p>First para.</p>\n<p>Second para.</p>\n</li>"))
+        #expect(html.contains("<li data-source-line=\"1\"><p data-source-line=\"1\">First para.</p>\n<p data-source-line=\"3\">Second para.</p>\n</li>"))
+    }
+
+    @Test func paragraphHasSourceLineAttribute() {
+        let html = MarkdownRenderer.htmlFragment(from: "para one")
+        #expect(html.contains("<p data-source-line=\"1\">para one</p>"))
+    }
+
+    @Test func laterBlockHasItsOwnSourceLine() {
+        let text = """
+        # Heading
+
+        Paragraph text
+        """
+        let html = MarkdownRenderer.htmlFragment(from: text)
+        #expect(html.contains("<h1 data-source-line=\"1\">Heading</h1>"))
+        #expect(html.contains("<p data-source-line=\"3\">Paragraph text</p>"))
+    }
+
+    @Test func blockquoteHasSourceLineAttribute() {
+        let html = MarkdownRenderer.htmlFragment(from: "> quoted")
+        #expect(html.contains("<blockquote data-source-line=\"1\">"))
+    }
+
+    @Test func thematicBreakHasSourceLineAttribute() {
+        let text = """
+        para
+
+        ---
+        """
+        let html = MarkdownRenderer.htmlFragment(from: text)
+        #expect(html.contains("<hr data-source-line=\"3\">"))
+    }
+
+    @Test func tableRowsHaveIndividualSourceLines() {
+        let text = """
+        | A | B |
+        | - | - |
+        | 1 | 2 |
+        """
+        let html = MarkdownRenderer.htmlFragment(from: text)
+        #expect(html.contains("<tr data-source-line=\"1\">"))
+        #expect(html.contains("<tr data-source-line=\"3\">"))
     }
 }

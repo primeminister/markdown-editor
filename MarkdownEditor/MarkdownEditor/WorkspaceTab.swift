@@ -17,6 +17,10 @@ final class WorkspaceTab {
     var selectedFileURL: URL?
     var text: String = ""
     var loadedText: String = ""
+    /// Preserves this tab's preview scroll-follow position across tab switches (`MainSplitViewController`
+    /// stays alive across switches within one window, see `WorkspaceDetailView`). Reset to 1 whenever a
+    /// new file is loaded into this tab, since a stale line number from the previous file is meaningless.
+    var cursorLine: Int = 1
 
     init(autosave: WorkspaceAutosaveController) {
         self.autosave = autosave
@@ -31,6 +35,7 @@ final class WorkspaceTab {
             loadedText = loaded
             text = loaded
             selectedFileURL = url
+            cursorLine = 1
         } catch {
             // Read failed (permissions, race with external delete) -- leave the previously shown file untouched.
             let alert = NSAlert(error: error)

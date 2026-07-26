@@ -36,7 +36,7 @@ private struct WorkspaceTabContentView: View {
         // Stable per-workspace-window identifier (the folder, not the selected file) --
         // MainSplitViewController bakes this in at first appearance and never re-reads it,
         // so this must not vary per file or per tab. See docs/plan-m7.md.
-        SplitView(text: $tab.text, isPreviewVisible: $isPreviewVisible, autosaveIdentifier: windowController.folderModel.folderURL.path)
+        SplitView(text: $tab.text, isPreviewVisible: $isPreviewVisible, cursorLine: $tab.cursorLine, autosaveIdentifier: windowController.folderModel.folderURL.path)
             .onChange(of: tab.text) { _, newValue in
                 guard let url = tab.selectedFileURL, newValue != tab.loadedText else { return }
                 tab.autosave.schedule(text: newValue, to: url)

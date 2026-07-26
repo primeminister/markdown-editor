@@ -12,9 +12,10 @@ import SwiftUI
 struct CheatsheetView: View {
     @State private var text = Self.loadCheatsheet()
     @AppStorage("isPreviewVisible") private var isPreviewVisible: Bool = true
+    @State private var cursorLine = 1
 
     var body: some View {
-        SplitView(text: $text, isPreviewVisible: $isPreviewVisible, autosaveIdentifier: "cheatsheet", isEditorEditable: false)
+        SplitView(text: $text, isPreviewVisible: $isPreviewVisible, cursorLine: $cursorLine, autosaveIdentifier: "cheatsheet", isEditorEditable: false)
             .frame(minWidth: 620, minHeight: 400)
     }
 

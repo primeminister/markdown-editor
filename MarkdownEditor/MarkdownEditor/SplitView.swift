@@ -11,11 +11,12 @@ import SwiftUI
 struct SplitView: NSViewControllerRepresentable {
     @Binding var text: String
     @Binding var isPreviewVisible: Bool
+    @Binding var cursorLine: Int
     let autosaveIdentifier: String
     var isEditorEditable: Bool = true
 
     func makeNSViewController(context: Context) -> MainSplitViewController {
-        MainSplitViewController(text: $text, isPreviewVisible: isPreviewVisible, autosaveIdentifier: autosaveIdentifier, isEditorEditable: isEditorEditable)
+        MainSplitViewController(text: $text, isPreviewVisible: isPreviewVisible, cursorLine: $cursorLine, autosaveIdentifier: autosaveIdentifier, isEditorEditable: isEditorEditable)
     }
 
     func updateNSViewController(_ controller: MainSplitViewController, context: Context) {
@@ -26,7 +27,7 @@ struct SplitView: NSViewControllerRepresentable {
         // detects that as reentrant layout and silently skips a pass, which shows up as a quick
         // up/down flash. Deferring one run-loop tick lets the outer layout pass finish first.
         DispatchQueue.main.async {
-            controller.update(text: $text, isPreviewVisible: isPreviewVisible)
+            controller.update(text: $text, isPreviewVisible: isPreviewVisible, cursorLine: $cursorLine)
         }
     }
 }
@@ -48,16 +49,16 @@ final class MainSplitViewController: NSSplitViewController {
     private let isEditorEditable: Bool
     private var hasSetWindowAutosaveName = false
 
-    init(text: Binding<String>, isPreviewVisible: Bool, autosaveIdentifier: String, isEditorEditable: Bool = true) {
+    init(text: Binding<String>, isPreviewVisible: Bool, cursorLine: Binding<Int>, autosaveIdentifier: String, isEditorEditable: Bool = true) {
         self.autosaveIdentifier = autosaveIdentifier
         self.isEditorEditable = isEditorEditable
 
-        let editorHostingController = NSHostingController(rootView: AnyView(EditorView(text: text, isEditable: isEditorEditable)))
+        let editorHostingController = NSHostingController(rootView: AnyView(EditorView(text: text, cursorLine: cursorLine, isEditable: isEditorEditable)))
         self.editorHostingController = editorHostingController
         let editorItem = NSSplitViewItem(viewController: editorHostingController)
         editorItem.minimumThickness = 300
 
-        let previewHostingController = NSHostingController(rootView: AnyView(PreviewView(text: text)))
+        let previewHostingController = NSHostingController(rootView: AnyView(PreviewView(text: text, cursorLine: cursorLine.wrappedValue)))
         self.previewHostingController = previewHostingController
         let previewSplitItem = NSSplitViewItem(viewController: previewHostingController)
         previewSplitItem.minimumThickness = 300
@@ -97,12 +98,12 @@ final class MainSplitViewController: NSSplitViewController {
         view.window?.setFrameAutosaveName(SplitViewAutosaveNaming.windowName(for: autosaveIdentifier))
     }
 
-    func update(text: Binding<String>, isPreviewVisible: Bool) {
+    func update(text: Binding<String>, isPreviewVisible: Bool, cursorLine: Binding<Int>) {
         // SwiftUI never re-diffs a NSHostingController's rootView on its own once handed to
         // AppKit — without reassigning it here on every update, EditorView/PreviewView would
         // freeze after the first render and never see subsequent text or state changes.
-        editorHostingController.rootView = AnyView(EditorView(text: text, isEditable: isEditorEditable))
-        previewHostingController.rootView = AnyView(PreviewView(text: text))
+        editorHostingController.rootView = AnyView(EditorView(text: text, cursorLine: cursorLine, isEditable: isEditorEditable))
+        previewHostingController.rootView = AnyView(PreviewView(text: text, cursorLine: cursorLine.wrappedValue))
         setPreviewVisible(isPreviewVisible)
     }
 
