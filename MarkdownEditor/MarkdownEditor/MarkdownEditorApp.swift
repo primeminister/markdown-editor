@@ -18,12 +18,28 @@ struct MarkdownEditorApp: App {
         DocumentGroup(newDocument: MarkdownDocument()) { file in
             ContentView(document: file.$document, fileURL: file.fileURL)
         }
+        // Suppresses DocumentGroup's own launch-time Open panel, which can't be configured to
+        // allow folders. `AppDelegate.applicationDidFinishLaunching` drives launch presentation
+        // instead, with a combined file-or-folder picker.
+        .defaultLaunchBehavior(.suppressed)
         .commands {
-            CommandGroup(after: .newItem) {
-                Button("Open Folder…") {
-                    WorkspaceWindowManager.shared.presentOpenPanel()
+            // Replaces DocumentGroup's built-in New/Open (SwiftUI only lets you swap out this
+            // whole group, not individual items within it -- see AppDelegate.swift) so "Open…" can
+            // offer files and folders together instead of files only, with "Open Folder…" folded
+            // in rather than kept as a separate command. Deliberately doesn't also rebuild "Open
+            // Recent": AppKit still shows its own native one for document-based apps regardless of
+            // what's supplied here (a `CommandGroup(replacing: .newItem)` quirk), so a hand-built
+            // one here just duplicates it rather than replacing it -- see AppDelegate.swift.
+            CommandGroup(replacing: .newItem) {
+                Button("New") {
+                    NSDocumentController.shared.newDocument(nil)
                 }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .keyboardShortcut("n", modifiers: .command)
+
+                Button("Open…") {
+                    appDelegate.presentOpenPanel()
+                }
+                .keyboardShortcut("o", modifiers: .command)
             }
             CommandGroup(after: .toolbar) {
                 Button(isPreviewVisible ? "Hide Preview" : "Show Preview") {

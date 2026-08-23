@@ -1,4 +1,4 @@
-//
+    //
 //  WorkspaceWindowManager.swift
 //  MarkdownEditor
 //
@@ -43,16 +43,6 @@ final class WorkspaceWindowManager {
         for controller in controllers.values {
             controller.flushAllPendingAutosaves()
         }
-    }
-
-    func presentOpenPanel() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.prompt = "Open"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        open(folder: url)
     }
 
     func open(folder url: URL) {
