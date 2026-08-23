@@ -185,10 +185,14 @@ enum MarkdownFormatter {
         let content = nsText.substring(with: paragraphRange)
         let lines = content.components(separatedBy: "\n")
 
-        func hasPrefix(_ line: String) -> Bool { line.hasPrefix(">") }
+        // `prefix` (e.g. "> ") is what gets added; `marker` is just its leading, non-optional
+        // character, so a line that already has the marker but is missing the trailing space
+        // (e.g. a hand-typed ">" with no space) still reads as "already formatted".
+        let marker = prefix.first
+        func hasPrefix(_ line: String) -> Bool { marker != nil && line.first == marker }
         func stripPrefix(_ line: String) -> String {
             if line.hasPrefix(prefix) { return String(line.dropFirst(prefix.count)) }
-            if line.hasPrefix(">") { return String(line.dropFirst(1)) }
+            if hasPrefix(line) { return String(line.dropFirst(1)) }
             return line
         }
 

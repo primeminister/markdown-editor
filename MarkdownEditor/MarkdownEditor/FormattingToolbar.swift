@@ -38,6 +38,9 @@ struct FormattingToolbar: View {
         }
         .buttonStyle(.borderless)
         .help(action.title)
+        // `.help` only supplies the accessibility *hint*; an icon-only button still needs an
+        // explicit label so VoiceOver announces what it does, not just its SF Symbol name.
+        .accessibilityLabel(action.title)
     }
 
     // The number-square SF Symbols (1.square/2.square/3.square) read ambiguously at toolbar size --
@@ -45,9 +48,9 @@ struct FormattingToolbar: View {
     @ViewBuilder
     private func label(for action: MarkdownFormattingAction) -> some View {
         switch action {
-        case .heading1: Text("H1").font(.system(size: 13, weight: .semibold))
-        case .heading2: Text("H2").font(.system(size: 13, weight: .semibold))
-        case .heading3: Text("H3").font(.system(size: 13, weight: .semibold))
+        case .heading1: Text("H1").font(.system(size: 16, weight: .semibold))
+        case .heading2: Text("H2").font(.system(size: 16, weight: .semibold))
+        case .heading3: Text("H3").font(.system(size: 16, weight: .semibold))
         default: Image(systemName: action.systemImage).font(.system(size: 16, weight: .medium))
         }
     }

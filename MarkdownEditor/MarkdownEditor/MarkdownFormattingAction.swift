@@ -56,9 +56,12 @@ extension MarkdownFormattingAction {
 
     var modifiers: EventModifiers {
         switch self {
-        case .heading1, .heading2, .heading3, .bold, .italic, .inlineCode, .link:
+        // Blockquote's key equivalent (">") is already only producible by holding Shift, so an
+        // explicit `.shift` here is redundant and can keep the shortcut from matching -- macOS
+        // still displays the ⇧ glyph in the menu automatically since the character itself needs it.
+        case .heading1, .heading2, .heading3, .bold, .italic, .inlineCode, .link, .blockquote:
             return .command
-        case .strikethrough, .fencedCode, .blockquote:
+        case .strikethrough, .fencedCode:
             return [.command, .shift]
         }
     }
