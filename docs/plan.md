@@ -134,4 +134,4 @@ Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj 
 
 
 ## Next features to implement:
-(none currently — add future wishlist items here)
+Simple formatting icon tool to allow easy editing of Markdown files, like h1-3, bold, italic, code block. Maybe other suggestions?
