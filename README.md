@@ -61,3 +61,10 @@ automatically via Swift Package Manager.
 See `CLAUDE.md` for the full architecture breakdown and test commands, and
 `docs/plan.md` for the original design plan and milestones this was built
 against.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
+
+Bundled binaries also include [`swift-markdown`](https://github.com/swiftlang/swift-markdown),
+© Apple Inc., licensed under [Apache License 2.0](https://github.com/swiftlang/swift-markdown/blob/main/LICENSE.txt).
