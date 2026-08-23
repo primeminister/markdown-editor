@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Validate tag
+        shell: bash
         run: |
           set -euo pipefail
           if [[ ! "${{ github.ref_name }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -22,6 +23,7 @@ jobs:
 
       - name: Resolve build settings
         working-directory: MarkdownEditor
+        shell: bash
         run: |
           set -euo pipefail
           BUILT_PRODUCTS_DIR=$(xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor \
@@ -47,6 +49,7 @@ jobs:
         working-directory: MarkdownEditor
         env:
           VERSION: ${{ github.ref_name }}
+        shell: bash
         run: |
           set -euo pipefail
           APP_PATH="$BUILT_PRODUCTS_DIR/MarkdownEditor.app"
