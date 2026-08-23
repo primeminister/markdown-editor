@@ -118,7 +118,12 @@ final class MainSplitViewController: NSSplitViewController {
                     FormattingToolbar()
                     Divider()
                 }
+                // Without an explicit maxHeight, EditorView (a plain NSViewRepresentable) reports
+                // only its ideal/fitting height to the VStack, so the whole stack renders smaller
+                // than the split item and gets centered in the leftover space -- forcing it to fill
+                // is what makes the toolbar hug the top instead of floating mid-pane.
                 EditorView(text: text, cursorLine: cursorLine, isEditable: isEditorEditable)
+                    .frame(maxHeight: .infinity)
             }
         )
     }

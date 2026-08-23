@@ -16,26 +16,40 @@ struct FormattingToolbar: View {
     private static let blockActions: [MarkdownFormattingAction] = [.fencedCode, .blockquote, .link]
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             ForEach(Self.headingActions, id: \.self) { button(for: $0) }
-            Divider()
+            Divider().frame(height: 16)
             ForEach(Self.inlineActions, id: \.self) { button(for: $0) }
-            Divider()
+            Divider().frame(height: 16)
             ForEach(Self.blockActions, id: \.self) { button(for: $0) }
             Spacer()
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func button(for action: MarkdownFormattingAction) -> some View {
         Button {
             MarkdownFormattingDispatch.perform(action)
         } label: {
-            Image(systemName: action.systemImage)
+            label(for: action)
+                .frame(width: 30, height: 24)
         }
         .buttonStyle(.borderless)
         .help(action.title)
+    }
+
+    // The number-square SF Symbols (1.square/2.square/3.square) read ambiguously at toolbar size --
+    // a plain "H1"/"H2"/"H3" text label is unambiguous where an icon has to be understood, not just seen.
+    @ViewBuilder
+    private func label(for action: MarkdownFormattingAction) -> some View {
+        switch action {
+        case .heading1: Text("H1").font(.system(size: 13, weight: .semibold))
+        case .heading2: Text("H2").font(.system(size: 13, weight: .semibold))
+        case .heading3: Text("H3").font(.system(size: 13, weight: .semibold))
+        default: Image(systemName: action.systemImage).font(.system(size: 16, weight: .medium))
+        }
     }
 }
 
