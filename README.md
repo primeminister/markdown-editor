@@ -16,7 +16,7 @@ Drive, git, whatever) is up to you.
 - **Live preview** with support for tables, nested lists, and code fences;
   external links open in your default browser instead of in-pane; follows
   system light/dark mode. The preview scrolls to follow the editor cursor,
-  smoothly cantering the corresponding rendered block as you move around the
+  smoothly centering the corresponding rendered block as you move around the
   document.
 - **Preview toggle** to hide the preview pane and edit distraction-free.
 - **Native open/save** — standard macOS document handling, `.md` file
