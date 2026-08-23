@@ -18,9 +18,9 @@ struct FormattingToolbar: View {
     var body: some View {
         HStack(spacing: 2) {
             ForEach(Self.headingActions, id: \.self) { button(for: $0) }
-            Divider().frame(height: 16)
+            Divider().frame(height: 20)
             ForEach(Self.inlineActions, id: \.self) { button(for: $0) }
-            Divider().frame(height: 16)
+            Divider().frame(height: 20)
             ForEach(Self.blockActions, id: \.self) { button(for: $0) }
             Spacer()
         }
@@ -48,10 +48,10 @@ struct FormattingToolbar: View {
     @ViewBuilder
     private func label(for action: MarkdownFormattingAction) -> some View {
         switch action {
-        case .heading1: Text("H1").font(.system(size: 16, weight: .semibold))
-        case .heading2: Text("H2").font(.system(size: 16, weight: .semibold))
-        case .heading3: Text("H3").font(.system(size: 16, weight: .semibold))
-        default: Image(systemName: action.systemImage).font(.system(size: 16, weight: .medium))
+        case .heading1: Text("H1").font(.system(size: 18, weight: .semibold))
+        case .heading2: Text("H2").font(.system(size: 18, weight: .semibold))
+        case .heading3: Text("H3").font(.system(size: 18, weight: .semibold))
+        default: Image(systemName: action.systemImage).font(.system(size: 18, weight: .medium))
         }
     }
 }
