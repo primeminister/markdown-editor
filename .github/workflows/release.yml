@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ['[0-9]+.[0-9]+.[0-9]+']
+    tags: ['*.*.*']
 
 jobs:
   build:
@@ -12,12 +12,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "${{ github.ref_name }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: tag '${{ github.ref_name }}' is not a valid X.Y.Z version" >&2
+            exit 1
+          fi
+
       - name: Resolve build settings
         working-directory: MarkdownEditor
+        shell: bash
         run: |
+          set -euo pipefail
           BUILT_PRODUCTS_DIR=$(xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor \
-            -configuration Release -showBuildSettings 2>/dev/null \
+            -configuration Release -showBuildSettings \
             | awk -F'= ' '/ BUILT_PRODUCTS_DIR /{print $2; exit}')
+          if [ -z "$BUILT_PRODUCTS_DIR" ]; then
+            echo "error: could not resolve BUILT_PRODUCTS_DIR" >&2
+            exit 1
+          fi
           echo "BUILT_PRODUCTS_DIR=$BUILT_PRODUCTS_DIR" >> "$GITHUB_ENV"
 
       - name: Build (Release, ad-hoc signed)
@@ -34,7 +49,9 @@ jobs:
         working-directory: MarkdownEditor
         env:
           VERSION: ${{ github.ref_name }}
+        shell: bash
         run: |
+          set -euo pipefail
           APP_PATH="$BUILT_PRODUCTS_DIR/MarkdownEditor.app"
 
           if [ ! -d "$APP_PATH" ]; then
