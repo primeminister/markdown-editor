@@ -64,6 +64,8 @@ Triggered on tag push matching the existing semver pattern (e.g. `on: push: tags
 ### 6. Cut a real release through the new pipeline
 Bump to a new tag (e.g. `1.2.0`) once the workflow is in place, rather than trying to backfill assets onto the existing asset-less tags. This becomes the first version the tap can actually install.
 
+**Done**: tag `1.1.3` (patch bump, not `1.2.0` — owner's call at execution time) cut on 2026-08-23 from `main` (`e7571cc`). Release workflow ran green; `MarkdownEditor-1.1.3.zip` + `.sha256` attached to the GitHub Release.
+
 ### 7. Create the tap repo: `primeminister/homebrew-tap`
 Public, separate from the app repo (standard Homebrew convention — lets `brew tap primeminister/tap` work). Contains `Casks/markdown-editor.rb`:
 ```ruby
@@ -76,15 +78,18 @@ cask "markdown-editor" do
   desc "Simple two-pane markdown editor with live HTML preview"
   homepage "https://github.com/primeminister/markdown-editor"
 
-  depends_on macos: ">= :sequoia"  # matches MACOSX_DEPLOYMENT_TARGET = 15.6
+  depends_on macos: :sequoia  # matches MACOSX_DEPLOYMENT_TARGET = 15.6; `brew style --cask` flags the ">= :sequoia" string form as deprecated in favor of this bare-symbol form
 
   app "MarkdownEditor.app"
 end
 ```
 No `zap` stanza needed for now — the app is sandboxed, so its data lives in the sandbox container rather than scattered `~/Library` locations. Skip `livecheck` for now (low release frequency, manual bump is fine); can add later if desired.
 
+**Done**: `primeminister/homebrew-tap` repo already existed (public, LICENSE + README pre-populated). Added `Casks/markdown-editor.rb` for `1.1.3`, committed directly to `main` (per step 9's call). `brew style --cask --fix` corrected `depends_on macos:` to the bare-symbol form shown above.
+
 ### 8. Install / update flow (for the owner and anyone they share this with)
-- Install: `brew tap primeminister/tap && brew install --cask markdown-editor`
+- Install: `brew tap primeminister/tap && brew trust --tap primeminister/tap && brew install --cask markdown-editor`
+  - **The `brew trust` step is required**, discovered during step 10's local verification (Homebrew 6.0.18, 2026-08-23): current Homebrew refuses to load a cask from a third-party tap at all until it's explicitly trusted — `brew install --cask markdown-editor` fails with `Refusing to load cask ... from untrusted tap` otherwise. This isn't a one-time Gatekeeper thing, it's a per-tap trust-on-first-use gate; wasn't anticipated when this plan was written.
 - First launch: Gatekeeper blocks it → System Settings → Privacy & Security → "Open Anyway" → confirm in the follow-up dialog. This repeats **once per new version** (new build = new ad-hoc signature), not just once ever.
 - Update: after the tap repo's cask is bumped for a new release, `brew upgrade --cask markdown-editor`.
 
@@ -92,10 +97,10 @@ No `zap` stanza needed for now — the app is sandboxed, so its data lives in th
 Per `CLAUDE.md`: the `release.yml` workflow, version-handling change, and `LICENSE` addition in the main repo are infra/chore work, not a plan milestone, so they go on a short-lived branch (e.g. `homebrew-release-pipeline`) with a normal PR — run `/code-review` on the diff before opening it, same as any other change. The new `homebrew-tap` repo is separate, low-stakes, and solo-maintained; a direct commit there (no PR ceremony) is reasonable, but that's the owner's call at execution time.
 
 ### 10. End-to-end verification
-1. Push the new tag, confirm the Actions run is green and the release asset + sha256 are attached with the expected filename.
-2. Fill in the tap's cask file with that version/sha256, commit/push.
-3. On the owner's Mac (or ideally a second one), `brew tap primeminister/tap` + `brew install --cask markdown-editor` into a clean state, confirm the Open Anyway flow works, and confirm the app actually launches and can open/save a `.md` file (sandbox entitlements still behaving correctly outside of a debug-run-from-Xcode environment is the main thing worth double-checking here).
-4. Cut a second dummy version bump end-to-end to confirm `brew upgrade --cask markdown-editor` picks it up correctly, before considering the pipeline done.
+1. ~~Push the new tag, confirm the Actions run is green and the release asset + sha256 are attached with the expected filename.~~ **Done** (1.1.3, see step 6).
+2. ~~Fill in the tap's cask file with that version/sha256, commit/push.~~ **Done** (see step 7).
+3. ~~On the owner's Mac (or ideally a second one), `brew tap primeminister/tap` + `brew install --cask markdown-editor` into a clean state, confirm the Open Anyway flow works, and confirm the app actually launches and can open/save a `.md` file (sandbox entitlements still behaving correctly outside of a debug-run-from-Xcode environment is the main thing worth double-checking here).~~ **Done** on the owner's own Mac, 2026-08-23 — hit the `brew trust` gate noted in step 8, then installed, launched, and confirmed open/save works.
+4. Cut a second dummy version bump end-to-end to confirm `brew upgrade --cask markdown-editor` picks it up correctly, before considering the pipeline done. **Not yet done.**
 
 ### 11. Repo security hardening (do this right after step 2, once public)
 Confirmed via the GitHub API today: branch protection and rulesets are **unavailable on this repo right now** — `gh api repos/primeminister/markdown-editor/branches/main/protection` returns 403 "Upgrade to GitHub Pro or make this repository public." Also confirmed: `primeminister` is currently the *only* collaborator (admin), so this is about locking in that model technically and adding public-repo-specific safety nets, not fixing an existing access problem.
@@ -108,3 +113,6 @@ Once public, set up (via repo Settings, or `gh api` PUT):
 3. **Secret scanning + push protection**: enable under Settings → Code security. Free and automatic once public; push protection actively blocks a future commit containing a recognizable secret pattern before it's even pushed — cheap extra insurance layered on top of the one-time manual audit already done in step 1.
 4. **Private vulnerability reporting** (optional, low effort): enable so a real security report lands privately instead of as a public issue.
 5. Add one line to `CLAUDE.md`'s workflow section noting the "never commit directly to main" rule is now GitHub-enforced (branch protection), not just convention.
+
+### 12. Update README to add the installation instructions for any users
+While I know what to do, it would be good to update the README to provide homebrew installation instructions right after Requirement section. Including the brew trust and "Open Anyway" instructions.
