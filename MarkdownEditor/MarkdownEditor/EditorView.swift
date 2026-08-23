@@ -40,7 +40,7 @@ struct EditorView: NSViewRepresentable {
     private var fontSize: CGFloat { CGFloat(EditorFontSize.clamped(editorFontSize)) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
+        let scrollView = MarkdownTextView.scrollableTextView()
         let textView = scrollView.documentView as! NSTextView
 
         textView.string = text

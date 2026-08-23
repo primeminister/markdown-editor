@@ -40,6 +40,13 @@ struct MarkdownHighlighterTests {
         #expect(tokens.map(\.range) == [nsRange(of: "*italic*", in: text)])
     }
 
+    @Test func strikethroughMatchesDoubleTildeSpan() {
+        let text = "This is ~~struck~~ text."
+        let tokens = MarkdownHighlighter.matches(in: text).filter { $0.type == .strikethrough }
+
+        #expect(tokens.map(\.range) == [nsRange(of: "~~struck~~", in: text)])
+    }
+
     @Test func inlineCodeMatchesBacktickSpan() {
         let text = "Use `let x = 1` here."
         let tokens = MarkdownHighlighter.matches(in: text).filter { $0.type == .inlineCode }
@@ -125,11 +132,11 @@ struct MarkdownHighlighterTests {
         #expect(result == lastParaRange)
     }
 
-    @Test func matchesFindsAllSevenTokenTypesInOneDocument() {
+    @Test func matchesFindsAllEightTokenTypesInOneDocument() {
         let text = """
         # Heading
 
-        Some **bold** and *italic* text with `code` and a [link](https://example.com).
+        Some **bold** and *italic* and ~~struck~~ text with `code` and a [link](https://example.com).
 
         > A quote
 

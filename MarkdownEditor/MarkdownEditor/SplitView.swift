@@ -53,7 +53,7 @@ final class MainSplitViewController: NSSplitViewController {
         self.autosaveIdentifier = autosaveIdentifier
         self.isEditorEditable = isEditorEditable
 
-        let editorHostingController = NSHostingController(rootView: AnyView(EditorView(text: text, cursorLine: cursorLine, isEditable: isEditorEditable)))
+        let editorHostingController = NSHostingController(rootView: Self.editorRootView(text: text, cursorLine: cursorLine, isEditorEditable: isEditorEditable))
         self.editorHostingController = editorHostingController
         let editorItem = NSSplitViewItem(viewController: editorHostingController)
         editorItem.minimumThickness = 300
@@ -102,9 +102,25 @@ final class MainSplitViewController: NSSplitViewController {
         // SwiftUI never re-diffs a NSHostingController's rootView on its own once handed to
         // AppKit — without reassigning it here on every update, EditorView/PreviewView would
         // freeze after the first render and never see subsequent text or state changes.
-        editorHostingController.rootView = AnyView(EditorView(text: text, cursorLine: cursorLine, isEditable: isEditorEditable))
+        editorHostingController.rootView = Self.editorRootView(text: text, cursorLine: cursorLine, isEditorEditable: isEditorEditable)
         previewHostingController.rootView = AnyView(PreviewView(text: text, cursorLine: cursorLine.wrappedValue))
         setPreviewVisible(isPreviewVisible)
+    }
+
+    /// Mounts the formatting toolbar inside the *existing* editor split item rather than adding a
+    /// third `NSSplitViewItem`, so divider-position/window-frame autosave (scoped to two items) is
+    /// untouched. Gated on `isEditorEditable` so it's automatically absent in the read-only
+    /// Cheatsheet window, which already passes `isEditorEditable: false`.
+    private static func editorRootView(text: Binding<String>, cursorLine: Binding<Int>, isEditorEditable: Bool) -> AnyView {
+        AnyView(
+            VStack(spacing: 0) {
+                if isEditorEditable {
+                    FormattingToolbar()
+                    Divider()
+                }
+                EditorView(text: text, cursorLine: cursorLine, isEditable: isEditorEditable)
+            }
+        )
     }
 
     private func setPreviewVisible(_ visible: Bool) {

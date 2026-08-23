@@ -12,6 +12,7 @@ enum MarkdownTokenType: CaseIterable {
     case header
     case bold
     case italic
+    case strikethrough
     case inlineCode
     case link
     case fencedCode
@@ -33,6 +34,7 @@ enum MarkdownHighlighter {
         (.inlineCode, regex("`[^`\\n]+`")),
         (.bold, regex("(\\*\\*|__)(?=\\S)(.+?)(?<=\\S)\\1")),
         (.italic, regex("(?<!\\*)\\*(?!\\*)(?=\\S)(.+?)(?<=\\S)\\*(?!\\*)|(?<!_)_(?!_)(?=\\S)(.+?)(?<=\\S)_(?!_)")),
+        (.strikethrough, regex("(?<!~)~~(?=\\S)(.+?)(?<=\\S)~~(?!~)")),
     ]
 
     private static func regex(_ pattern: String, options: NSRegularExpression.Options = []) -> NSRegularExpression {
@@ -140,6 +142,8 @@ enum MarkdownHighlighter {
             return [.font: boldFont]
         case .italic:
             return [.font: italicFont]
+        case .strikethrough:
+            return [.strikethroughStyle: NSUnderlineStyle.single.rawValue, .foregroundColor: NSColor.secondaryLabelColor]
         case .inlineCode:
             return [
                 .foregroundColor: NSColor.systemPink,

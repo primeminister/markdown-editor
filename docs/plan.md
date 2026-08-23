@@ -132,6 +132,11 @@ Status: [x] Done
 
 Headless build/test verification: `xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor -configuration Debug build` and `... test ...` (see Testing strategy). The "Verify:" bullets above require actually running the app on the owner's Mac.
 
+#### Milestone 10
+Status: [ ] Not started
 
-## Next features to implement:
-Simple formatting icon tool to allow easy editing of Markdown files, like h1-3, bold, italic, code block. Maybe other suggestions?
+**M10 — Formatting toolbar with keyboard shortcuts.** Full design in `docs/plan-m10.md`.
+   - Thin formatting toolbar above the editor pane only: Heading 1/2/3, Bold, Italic, Strikethrough, Inline code, Fenced code block, Blockquote, Link — 10 SF Symbol buttons, all smart-toggle (re-invoking removes existing formatting instead of double-wrapping).
+   - Matching keyboard shortcuts for all 10 actions, plus two reassignments: sidebar toggle moves to ⌘/, preview toggle moves to ⌘⇧P, freeing ⌘B for Bold.
+   - Strikethrough (`~~text~~`) is a new `MarkdownHighlighter` token type, added alongside the toolbar work.
+   - Verify: all 10 buttons/shortcuts apply and toggle-off correctly in both single-file and folder windows; heading-level switching and multi-line blockquote toggling behave as designed; single ⌘Z reverts one formatting action; toolbar is absent above the preview pane and in the read-only Cheatsheet window; reassigned shortcuts (⌘/, ⌘⇧P, ⌘B) work as expected; divider/window-frame autosave still persists correctly.
