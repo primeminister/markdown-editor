@@ -39,7 +39,7 @@ The Xcode project is at `MarkdownEditor/MarkdownEditor.xcodeproj`, scheme `Markd
 
 This is a solo/personal project (`primeminister/markdown-editor` on GitHub, default branch `main`), but it still uses a PR-based workflow for review discipline:
 
-- **Never commit directly to `main`.** All work happens on a feature branch, pushed and opened as a PR via `gh pr create`.
+- **Never commit directly to `main`.** All work happens on a feature branch, pushed and opened as a PR via `gh pr create`. This is now GitHub-enforced, not just convention: branch protection on `main` requires a PR (including for admins) and a passing `test` status check, and blocks force-pushes/deletion — set up 2026-08-23 per `docs/plan-homebrew.md` step 11.
 - **One PR per milestone.** `docs/plan.md` defines milestones M1–M4, each independently runnable/testable — each milestone is one PR (e.g. branch `m1-skeleton-open-save`, PR title `M1: skeleton, open/save round-trip`). If work doesn't map to a plan milestone (bugfix, chore, plan update), use a short descriptive branch name instead.
 - **Before opening a PR, run `/code-review` on the diff.** Fix findings you're confident about; if anything uncertain remains, note it explicitly in the PR description rather than silently dropping it.
 - **Verify the build/tests before opening the PR** — once the Xcode project exists, run `xcodebuild build` and `xcodebuild test -scheme MarkdownEditor -destination 'platform=macOS'` locally, not just eyeball the diff. CI (`.github/workflows/ci.yml`, added in the M1 PR) re-runs the same test command on every push/PR as a second check.
