@@ -1,4 +1,5 @@
-# markdown-editor
+# MarkdownEditor
+_A simple native macOS two-pane layout markdown editor_
 
 A native macOS markdown editor: a plain-text editor with markdown syntax
 highlighting on one side, and a live rendered preview on the other. Built for
@@ -11,11 +12,11 @@ Drive, git, whatever) is up to you.
 - **Two-pane layout** — plain-text editor with syntax highlighting alongside
   a live HTML preview, not inline/WYSIWYG rendering.
 - **Syntax highlighting** for headers, bold, italic, inline code, links,
-  fenced code blocks, and blockquotes.
+  fenced code blocks, and block quotes.
 - **Live preview** with support for tables, nested lists, and code fences;
   external links open in your default browser instead of in-pane; follows
   system light/dark mode. The preview scrolls to follow the editor cursor,
-  smoothly centering the corresponding rendered block as you move around the
+  smoothly cantering the corresponding rendered block as you move around the
   document.
 - **Preview toggle** to hide the preview pane and edit distraction-free.
 - **Native open/save** — standard macOS document handling, `.md` file
@@ -43,6 +44,28 @@ Drive, git, whatever) is up to you.
 
 - macOS 15.6 or later
 - Xcode (full install, not just Command Line Tools) to build
+
+## Installation
+
+Install via Homebrew from the personal tap:
+
+```sh
+brew tap primeminister/tap
+brew trust --tap primeminister/tap
+brew install --cask markdown-editor
+```
+
+The `brew trust` step is required — Homebrew refuses to load a cask from a
+third-party tap until it's explicitly trusted, separately from any Gatekeeper
+check.
+
+The app isn't notarized (no Apple Developer Program membership), so Gatekeeper
+will block the first launch of each new version: go to **System Settings →
+Privacy & Security**, click **Open Anyway**, then confirm in the follow-up
+dialog. This repeats once per new version, since each build has a new ad-hoc
+signature.
+
+To update to a new release: `brew upgrade --cask markdown-editor`.
 
 ## Building and running
 
