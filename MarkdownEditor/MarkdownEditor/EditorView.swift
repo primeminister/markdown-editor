@@ -40,8 +40,12 @@ struct EditorView: NSViewRepresentable {
     private var fontSize: CGFloat { CGFloat(EditorFontSize.clamped(editorFontSize)) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        let textView = scrollView.documentView as! NSTextView
+        let scrollView = MarkdownTextView.scrollableTextView()
+        // Cast to the concrete subtype (not just NSTextView) so a future change that stops handing
+        // back a MarkdownTextView fails loudly here, instead of silently making every toolbar
+        // button/shortcut a no-op (they dispatch via the responder chain to MarkdownTextView's
+        // @objc methods, which a plain NSTextView doesn't implement).
+        let textView = scrollView.documentView as! MarkdownTextView
 
         textView.string = text
         textView.delegate = context.coordinator

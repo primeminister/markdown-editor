@@ -45,12 +45,12 @@ struct MarkdownEditorApp: App {
                 Button(isPreviewVisible ? "Hide Preview" : "Show Preview") {
                     isPreviewVisible.toggle()
                 }
-                .keyboardShortcut("/", modifiers: .command)
+                .keyboardShortcut("p", modifiers: [.command, .shift])
 
                 Button("Toggle Sidebar") {
                     WorkspaceWindowManager.shared.toggleSidebarForKeyWindow()
                 }
-                .keyboardShortcut("b", modifiers: .command)
+                .keyboardShortcut("/", modifiers: .command)
 
                 Divider()
 
@@ -68,6 +68,17 @@ struct MarkdownEditorApp: App {
                     editorFontSize = EditorFontSize.default
                 }
                 .keyboardShortcut("0", modifiers: .command)
+            }
+            // Replaces (not appends after) SwiftUI's default `.textFormatting` group, which already
+            // ships system Bold/Italic/Underline items bound to ⌘B/⌘I -- appending alongside those
+            // would leave two competing items on the same key equivalents.
+            CommandGroup(replacing: .textFormatting) {
+                ForEach(MarkdownFormattingAction.allCases, id: \.self) { action in
+                    Button(action.title) {
+                        MarkdownFormattingDispatch.perform(action)
+                    }
+                    .keyboardShortcut(action.keyEquivalent, modifiers: action.modifiers)
+                }
             }
             CommandGroup(after: .help) {
                 Button("Markdown Syntax") {
