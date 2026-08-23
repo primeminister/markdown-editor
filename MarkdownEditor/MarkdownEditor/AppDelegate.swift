@@ -11,11 +11,14 @@ import AppKit
 /// (`application(_:open:)`) and for the launch-time picker below. Supplying this delegate means
 /// `DocumentGroup`'s automatic open-URL handling no longer fires on its own for
 /// `application(_:open:)`, so the plain-file case must be explicitly forwarded here.
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var didRestoreSession = false
-    /// Set by `application(_:open:)` when it fires during launch (Finder double-click / drag onto
-    /// the app icon while not already running) -- lets `applicationDidFinishLaunching` know not to
-    /// also show its own launch picker on top of whatever Finder already told us to open.
+    /// Set whenever `application(_:open:)` fires with a nonempty URL list, including well after
+    /// launch -- only the value at the one point `applicationDidFinishLaunching` reads it actually
+    /// matters, to know whether Finder already told us what to open during launch (double-click /
+    /// drag onto the app icon while not already running) so it doesn't also show its own launch
+    /// picker on top of that.
     private var didOpenURLDuringLaunch = false
     /// Flips true once `applicationDidFinishLaunching` has made its one launch-time decision.
     /// `applicationShouldOpenUntitledFile` stays a hard `false` until then, regardless of call
