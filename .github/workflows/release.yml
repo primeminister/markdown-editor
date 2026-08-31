@@ -40,8 +40,13 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
         run: |
+          # Force a universal build. The runner (macos-latest) is Apple Silicon;
+          # without an explicit ARCHS the build came out arm64-only, which macOS
+          # rejects on Intel Macs as "not supported on this Mac" (all 1.x
+          # releases had this problem). The lipo check in Package enforces it.
           xcodebuild -project MarkdownEditor.xcodeproj -scheme MarkdownEditor \
             -configuration Release build \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=YES \
             DEVELOPMENT_TEAM="" MARKETING_VERSION="$VERSION"
 
@@ -58,6 +63,17 @@ jobs:
             echo "error: built app not found at $APP_PATH" >&2
             exit 1
           fi
+
+          # Guard against shipping a single-arch binary again (the 1.x releases
+          # were arm64-only and failed to launch on Intel Macs).
+          ARCHS_BUILT=$(lipo -archs "$APP_PATH/Contents/MacOS/MarkdownEditor")
+          echo "built architectures: $ARCHS_BUILT"
+          for want in arm64 x86_64; do
+            case " $ARCHS_BUILT " in
+              *" $want "*) ;;
+              *) echo "error: release binary is missing the $want slice (got: $ARCHS_BUILT)" >&2; exit 1 ;;
+            esac
+          done
 
           ZIP_NAME="MarkdownEditor-$VERSION.zip"
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
